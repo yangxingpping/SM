@@ -1,0 +1,81 @@
+#context const, current text should not be modified
+[log]
+    [log.node]
+        addr = "127.0.0.1"
+        port = 8010
+    [log.context]
+        log_level_array = ["trace", "debug", "info", "warn", "error"]
+        format = "[%H:%M:%S %z] [%n] [%^%L%$] [%!] [thread %t] %v"
+        level = 1   # "debug"
+        log_file = "server.log"
+        log_file_path= "./"
+        log_roll_size = 10000000
+
+[login]
+    port = 10086
+    tokenlife = 3600
+[guid]
+    [guid.node]
+        addr = "127.0.0.1"
+        port = 8081
+
+[http]
+    addr="127.0.0.1"
+    port=10086
+    rootPath="./dist"
+    resRootPath="./dist"
+
+[jwt]
+    issuer="alqaz"
+    type="JWS"
+    key="key"
+    noAuthUrl=["/http/User/Regist"]
+
+
+
+[transport]
+    addr="127.0.0.1"
+    port=10087
+    timeout=3600
+
+[nanomsg]
+    [nanomsg.rep]
+        addr="127.0.0.1"
+        port=9001
+
+[dbmgr]
+    databasetype=1  #0 postgresql; 1 sqlite3
+    databasemodel=0 #embed; 1 alone
+    databasedebug=true #true or false
+    [dbmgr.sqlite]
+        sqlitepath="conf"
+        sqlitename = "db.db"
+    [dbmgr.postgresql]
+        dbname="demo"
+        addr="127.0.0.1"
+        port=5432
+        user="postgres"
+        pass="123456"
+        useSSL=0
+    [dbmgr.redis]
+        addr="127.0.0.1"
+        port=6379
+        user=""
+        pass=""
+        useSSL=0
+    [dbmgr.remote]
+        addr="127.0.0.1"
+        port=5400
+        useSSL=0
+    [dbmgr.remotenng]
+        addr="127.0.0.1"
+        port=5401
+        useSSL=0
+    [dbmgr.rremote]
+        addr="127.0.0.1"
+        port=5402
+        useSSL=0
+    [dbmgr.rremotenng]
+        addr="127.0.0.1"
+        port=5403
+        useSSL=0
