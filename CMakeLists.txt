@@ -4,11 +4,14 @@ cmake_minimum_required(VERSION 3.20)
 set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
   CACHE STRING "Vcpkg toolchain file")
 
-project(libsm)
+project(libs)
 
+#set(CMAKE_CXX_COMPILER /Users/alqazy/Downloads/clang+llvm-13.0.1-x86_64-apple-darwin/bin/clang)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_C_STANDARD 11)
+
+
 
 find_package(nng REQUIRED)
 find_package(nanomsg REQUIRED)

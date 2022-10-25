@@ -1,0 +1,42 @@
+
+#ifndef HASHLIBRARY_EXPORT_H
+#define HASHLIBRARY_EXPORT_H
+
+#ifdef HASHLIBRARY_STATIC_DEFINE
+#  define HASHLIBRARY_EXPORT
+#  define HASHLIBRARY_NO_EXPORT
+#else
+#  ifndef HASHLIBRARY_EXPORT
+#    ifdef hashlibrary_EXPORTS
+        /* We are building this library */
+#      define HASHLIBRARY_EXPORT 
+#    else
+        /* We are using this library */
+#      define HASHLIBRARY_EXPORT 
+#    endif
+#  endif
+
+#  ifndef HASHLIBRARY_NO_EXPORT
+#    define HASHLIBRARY_NO_EXPORT 
+#  endif
+#endif
+
+#ifndef HASHLIBRARY_DEPRECATED
+#  define HASHLIBRARY_DEPRECATED __attribute__ ((__deprecated__))
+#endif
+
+#ifndef HASHLIBRARY_DEPRECATED_EXPORT
+#  define HASHLIBRARY_DEPRECATED_EXPORT HASHLIBRARY_EXPORT HASHLIBRARY_DEPRECATED
+#endif
+
+#ifndef HASHLIBRARY_DEPRECATED_NO_EXPORT
+#  define HASHLIBRARY_DEPRECATED_NO_EXPORT HASHLIBRARY_NO_EXPORT HASHLIBRARY_DEPRECATED
+#endif
+
+#if 0 /* DEFINE_NO_DEPRECATED */
+#  ifndef HASHLIBRARY_NO_DEPRECATED
+#    define HASHLIBRARY_NO_DEPRECATED
+#  endif
+#endif
+
+#endif /* HASHLIBRARY_EXPORT_H */
