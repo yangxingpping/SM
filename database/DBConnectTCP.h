@@ -29,7 +29,7 @@ class dealDBMsgPlaceHolder
       co_return "placeholder";
     }
     MainCmd getMainCmd() {
-        return MainCmd::Invalid;
+        return MainCmd::MainCmdBegin;
     }
 };
 
@@ -38,7 +38,7 @@ class DATABASE_EXPORT DBConnectTCP
   public:
     DBConnectTCP( string ip, uint16_t port);
     ~DBConnectTCP();
-    asio::awaitable<bool> _execQuery(string& req, string& succ, AssDB op);
+    asio::awaitable<bool> _execQuery(string& req, string& succ, uint16_t op);
   private:
     string _ip;
     uint16_t _port;

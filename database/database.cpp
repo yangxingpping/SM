@@ -98,16 +98,16 @@ namespace SMDB
 
 	void asyn_nng_demo()
 	{
-		auto serverfunc = std::make_shared<RouterFuncType>([](std::string req, string token)->asio::awaitable<std::string>
-			{
-				std::string ret{ "fuck" };
+        auto serverfunc = std::make_shared<RouterFuncType>([](std::string& req, string token)->asio::awaitable<RouterFuncReturnType>
+            {
+                RouterFuncReturnType ret = std::make_shared<string>(string("fuck"));
 
 				co_return ret;
 			});
 
 		uint16_t portx = 998;
 
-		SMNetwork::addRouterTrans(MainCmd::Invalid, 0, serverfunc);
+		SMNetwork::addRouterTrans(MainCmd::MainCmdBegin, 0, serverfunc);
 
 		shared_ptr<SMNetwork::PackDealerBase> ps = shared_ptr<SMNetwork::PackDealerBase>(new SMNetwork::PackDealerNoHead(ChannelType::EchoServer));
 		shared_ptr<SMNetwork::PackDealerBase> pc = shared_ptr<SMNetwork::PackDealerBase>(new SMNetwork::PackDealerNoHead(ChannelType::EchoClient));

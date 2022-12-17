@@ -49,21 +49,21 @@ shared_ptr<DBManager>  DBManager::SDBMgrInit2()
 #ifdef USE_SQLITE
 DBManager::DBManager(string file, bool debug)
 {
-    _confsqlite = make_shared<sqlite::connection_config>();
-    _confsqlite->path_to_database = file;
-    _confsqlite->flags = SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE;
-    _confsqlite->debug = debug;
+    _connconf = make_shared<sqlconn::connection_config>();
+    _connconf->path_to_database = file;
+    _connconf->flags = SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE;
+    _connconf->debug = debug;
 }
 #else
 DBManager::DBManager(size_t concurrent, string db, string host, string user,
     string pass, bool debug)
 {
-    _confpg = make_shared<pg::connection_config>();
-    _confpg->host = host;
-    _confpg->user = user;
-    _confpg->password = pass;
-    _confpg->dbname = db;
-    _confsqlite->debug = debug;
+    _connconf = make_shared<sqlconn::connection_config>();
+    _connconf->host = host;
+    _connconf->user = user;
+    _connconf->password = pass;
+    _connconf->dbname = db;
+    _connconf->debug = debug;
     for (size_t i = 0; i < concurrent; ++i)
     {
         auto pconn = _addPostgresConnect();
@@ -77,26 +77,37 @@ void DBManager::setConfig(const DatabaseConfig& conf)
     _conf = conf;
 }
 
-#ifdef USE_SQLITE
-sqlite::connection* DBManager::_addConnect()
-{
-    sqlite::connection* db = nullptr;
-    BEGIN_STD;
-	db = new sqlite::connection(*_confsqlite);
-	SPDLOG_INFO("sqlite db connect success, database file {}", _confsqlite->path_to_database);
-	END_STD;
-    return db;
-}
-#else
-pg::connection* DBManager::_addsConnect()
-{
-    auto db = new pg::connection();
-    db->connectUsing(_confpg);
-    SPDLOG_INFO("postgresql db connect success");
 
+string DBManager::serializeConf()
+{
+    string ret;
+#ifdef USE_SQLITE
+    ret = fmt::format("sqlite db file {}", _connconf->path_to_database);
+#else
+    ret = fmt::format("db ip[], port[]");
+#endif
+    return ret;
+}
+
+sqlconn::connection* DBManager::_addConnect()
+{
+    sqlconn::connection* db = nullptr;
+    BEGIN_STD;
+#ifdef USE_SQLITE
+	db = new sqlconn::connection(*_connconf);
+	SPDLOG_INFO("sqlite db connect success, database file {}", _connconf->path_to_database);
+#else
+	auto db = new sqlconn::connection();
+	db->connectUsing(_connconf);
+#endif
+	END_STD;
+    if (!db)
+    {
+        SPDLOG_ERROR("connect to database failed, connect config info {}", serializeConf());
+    }
+    assert(db);
     return db;
 }
-#endif
 
 
 RediscConnectType* DBManager::_addRedisConnect()
@@ -125,6 +136,11 @@ DBConnectType* DBManager::GetConn()
         pret = _addConnect();
     }
     SPDLOG_INFO("get connect pointer {}", fmt::ptr(pret));
+    if (!pret)
+    {
+        SPDLOG_WARN("get connect for db failed");
+    }
+    assert(pret);
     return pret;
 }
 
@@ -158,6 +174,10 @@ DBConnectType& DBInst::operator*()
 DBConnectType* DBInst::get()
 {
     return _conn;
+}
+DBConnectType& DBInst::ref()
+{
+    return *_conn;
 }
 DBInst::~DBInst()
 {

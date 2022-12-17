@@ -23,13 +23,14 @@ DBConnectNNG::~DBConnectNNG() {
 
 }
 
-asio::awaitable<bool> DBConnectNNG::_execQuery(string& req, string& rep, AssDB op)
+asio::awaitable<bool> DBConnectNNG::_execQuery(string& req, string& rep, uint16_t op)
 {
     bool bret = true;
     if (_sock == nullptr)
     {
         _sock = std::make_shared<SMNetwork::AsyncReq>(_ip, _port, ChannelType::DBClient);
         _packer = std::shared_ptr<SMNetwork::PackDealerBase>(new SMNetwork::PackDealerMainSub(MainCmd::DBQuery, ChannelType::DBClient));
+        _packer->setAssc(op);
         _sock->init(ServeMode::SConnect, _packer);
     }
     auto w = _sock->getWorker();
@@ -39,7 +40,7 @@ asio::awaitable<bool> DBConnectNNG::_execQuery(string& req, string& rep, AssDB o
         co_return false;
     }
     BEGIN_ASIO;
-		rep = co_await w->reqrep(req, (uint16_t)(op));
+	rep = co_await w->reqrep(req, (uint16_t)(op));
     END_ASIO;
     co_return bret;
 }

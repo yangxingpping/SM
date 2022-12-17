@@ -66,6 +66,12 @@ struct us_udp_packet_buffer_t;
 WIN32_EXPORT char *us_udp_packet_buffer_payload(struct us_udp_packet_buffer_t *buf, int index);
 WIN32_EXPORT int us_udp_packet_buffer_payload_length(struct us_udp_packet_buffer_t *buf, int index);
 
+/* Copies out local (received destination) ip (4 or 16 bytes) of received packet */
+WIN32_EXPORT int us_udp_packet_buffer_local_ip(struct us_udp_packet_buffer_t *buf, int index, char *ip);
+
+/* Get the bound port in host byte order */
+WIN32_EXPORT int us_udp_socket_bound_port(struct us_udp_socket_t *s);
+
 /* Peeks peer addr (sockaddr) of received packet */
 WIN32_EXPORT char *us_udp_packet_buffer_peer(struct us_udp_packet_buffer_t *buf, int index);
 
@@ -89,7 +95,7 @@ WIN32_EXPORT struct us_udp_packet_buffer_t *us_create_udp_packet_buffer();
 
 //WIN32_EXPORT struct us_udp_socket_t *us_create_udp_socket(struct us_loop_t *loop, void (*data_cb)(struct us_udp_socket_t *, struct us_udp_packet_buffer_t *, int), void (*drain_cb)(struct us_udp_socket_t *), char *host, unsigned short port);
 
-WIN32_EXPORT struct us_udp_socket_t *us_create_udp_socket(struct us_loop_t *loop, struct us_udp_packet_buffer_t *buf, void (*data_cb)(struct us_udp_socket_t *, struct us_udp_packet_buffer_t *, int), void (*drain_cb)(struct us_udp_socket_t *), char *host, unsigned short port, void *user);
+WIN32_EXPORT struct us_udp_socket_t *us_create_udp_socket(struct us_loop_t *loop, struct us_udp_packet_buffer_t *buf, void (*data_cb)(struct us_udp_socket_t *, struct us_udp_packet_buffer_t *, int), void (*drain_cb)(struct us_udp_socket_t *), const char *host, unsigned short port, void *user);
 
 /* This one is ugly, should be ext! not user */
 void *us_udp_socket_user(struct us_udp_socket_t *s);
@@ -123,6 +129,7 @@ struct us_socket_context_options_t {
     const char *passphrase;
     const char *dh_params_file_name;
     const char *ca_file_name;
+    const char *ssl_ciphers;
     int ssl_prefer_low_memory_usage; /* Todo: rename to prefer_low_memory_usage and apply for TCP as well */
 };
 
@@ -169,12 +176,18 @@ WIN32_EXPORT void *us_socket_context_ext(int ssl, struct us_socket_context_t *co
 WIN32_EXPORT struct us_listen_socket_t *us_socket_context_listen(int ssl, struct us_socket_context_t *context,
     const char *host, int port, int options, int socket_ext_size);
 
+WIN32_EXPORT struct us_listen_socket_t *us_socket_context_listen_unix(int ssl, struct us_socket_context_t *context,
+    const char *path, int options, int socket_ext_size);
+
 /* listen_socket.c/.h */
 WIN32_EXPORT void us_listen_socket_close(int ssl, struct us_listen_socket_t *ls);
 
 /* Land in on_open or on_connection_error or return null or return socket */
 WIN32_EXPORT struct us_socket_t *us_socket_context_connect(int ssl, struct us_socket_context_t *context,
     const char *host, int port, const char *source_host, int options, int socket_ext_size);
+
+WIN32_EXPORT struct us_socket_t *us_socket_context_connect_unix(int ssl, struct us_socket_context_t *context,
+    const char *server_path, int options, int socket_ext_size);
 
 /* Is this socket established? Can be used to check if a connecting socket has fired the on_open event yet.
  * Can also be used to determine if a socket is a listen_socket or not, but you probably know that already. */

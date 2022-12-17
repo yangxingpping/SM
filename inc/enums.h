@@ -20,6 +20,11 @@ enum class HtmlBodyType
 {
     Json,
     Html,
+    JS,
+    Woff,
+    Jpeg,
+    Css,
+    Ico,
 };
 
 enum class ChannelType 
@@ -90,34 +95,28 @@ enum class PackType
     Max,
 };
 
+enum class PackDirection
+{
+    Req,
+    Rep,
+    Pub,
+    Sub,
+};
+
 enum class MainCmd 
 {
-    Invalid = 1,
+    MainCmdBegin = 1,
+    DefaultMain,
     Echo,
     User,
-    PlaceMsg,
     DBQuery,
     RDBQuery,
-
-    PLCBegin,
-    PLCReq,
-    PLCResp,
-    DealPLC,
-    DealOdd,
-    PLCEnd,
-
-    R8Begin,
-    UploadRecord,
-    PayOrders,
-    CategryMenus,
-    GroupKeywords,
-    GetRecord,
-    R8End,
-  
+    MainCmdEnd,
 };
 
 enum class AssDB 
 {
+    SysDBBegin,
     Regist=1,
     Login,
     Logout,
@@ -129,53 +128,7 @@ enum class AssDB
 	GetSysAdmin,
 	DelSysAdmin,
     DBEcho,
-
-    ShopBegin,
-    GetShopTime,
-    GetOrderList,
-    GetFoodList,
-    GetCutList,
-    WxPay,
-    ShopEnd,
-
-    RedisBegin,
-    getGroupKeyword,
-    setGroupKeyword,
-    RedisEnd,
-
-    PLCBegin,
-    GetPLCWarns,
-    GetDiscInfo,
-    GetPLCType,
-    TriggerWarn,
-    SetOddError,
-    GetOddError,
-    getOddList,
-    PLCEnd,
-
-    R8Begin,
-    addGroup,
-    removeGroup,
-    getGroup,
-    addCategy,
-    removeCategy,
-    getCategy,
-    addMenu,
-    updatMenu,
-    removeMenu,
-    upLoadOrderRecord,
-    upLoadPayRecord,
-    getOrder,
-    getGreetState,
-    setGreetState,
-    getMenu,
-    updateMenuCategy,
-    deleteMenuCategy,
-    getOrderPrint,
-    getDayProfile,
-	R8End,
-
-    Max,
+    SysDBEnd,
 };
 
 enum class AssAuth
@@ -226,7 +179,7 @@ public:
 class cmdhead
 {
 public:
-    MainCmd mainc = MainCmd::Invalid;
+    MainCmd mainc = MainCmd::MainCmdBegin;
     uint16_t assc = 0;
     uint32_t len = 0;
 };
@@ -242,10 +195,12 @@ enum class statusCode
 {
     ok = 20000,
     invalidUserOrPhone = 30000,
+    sqlExecuteFailed,
     jwtCheckFailed,
     registNameRepeat,
     wrongUserOrPhoneOrPass,
     invalidJson=40000,
     networkError,
+    sendDBQueryExecFailed,
     MaxCommStatusCode=80000,
 };

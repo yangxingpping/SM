@@ -13,7 +13,7 @@ using std::string;
 
 namespace SMNetwork
 {
-	std::string* PackDealerNoHead::unpack(string& pack)
+	std::string* PackDealerNoHead::unpack(seqNumType* seqnum, string& pack)
 	{
 		thread_local string ret;
 		ret.clear();
@@ -25,7 +25,7 @@ namespace SMNetwork
 		return &ret;
 	}
 
-	std::string* PackDealerNoHead::unpack(std::string_view pack)
+	std::string* PackDealerNoHead::unpack(seqNumType* seqnum, std::string_view pack)
 	{
 		thread_local string ret;
 		ret.clear();
@@ -37,7 +37,7 @@ namespace SMNetwork
 		return &ret;
 	}
 
-	std::string* PackDealerNoHead::pack(std::string_view msg)
+	std::string* PackDealerNoHead::pack(seqNumType* seqnum, std::string_view msg)
 	{
 		thread_local std::string ret;
 		ret.clear();
@@ -48,12 +48,13 @@ namespace SMNetwork
 
 	asio::awaitable<std::string*> PackDealerNoHead::dealmsg(string& msg)
 	{
-		auto mainc = MainCmd::Invalid;
+		auto mainc = MainCmd::DefaultMain;
 		PtTransRouterElement funcs = getRouterTransByMainC(mainc);
 		SPDLOG_INFO("channel type {}", magic_enum::enum_name(_channel));
 
 		string strreq;
-		auto pstrreq = unpack(msg);
+		seqNumType seqnum;
+		auto pstrreq = unpack(reqSeq(), msg);
 		auto func2 = funcs->begin();
 		assert(func2 != funcs->end());
 		if (func2 == funcs->end())
@@ -61,18 +62,18 @@ namespace SMNetwork
 			SPDLOG_ERROR("  templ mainc = {},  deal func = {}", magic_enum::enum_name(mainc), fmt::ptr(funcs));
 			co_return nullptr;
 		}
-		string ret;
+		RouterFuncReturnType ret;
 		string token;
 		BEGIN_ASIO;
 		ret = co_await(*(func2->second))(*pstrreq, token);
 		END_ASIO;
-		SPDLOG_INFO("send to client data: [{}], size:[{}]", ret, ret.length());
-		if (ret.empty())
+		if (!ret || ret->empty())
 		{
 			SPDLOG_ERROR("  mainc = {} response 0", magic_enum::enum_name(mainc));
 			co_return nullptr;
 		}
-		auto drep2 = pack(string_view(ret));
+		SPDLOG_INFO("send to client data: [{}], size:[{}]", *ret, ret->length());
+		auto drep2 = pack(reqSeq(), string_view(*ret));
 
 		co_return drep2;
 
@@ -84,9 +85,9 @@ namespace SMNetwork
 		return ret;
 	}
 
-	PackDealerNoHead::PackDealerNoHead( ChannelType channel) : _channel(channel)
+	PackDealerNoHead::PackDealerNoHead( ChannelType channel) : PackDealerCommon(channel)
 	{
-		auto mainc = MainCmd::Invalid;
+		auto mainc = MainCmd::MainCmdBegin;
 		PtTransRouterElement funcs = getRouterTransByMainC(mainc);
 		assert(funcs != nullptr);
 		if (funcs == nullptr)
@@ -96,9 +97,9 @@ namespace SMNetwork
 	}
 
 
-	PackDealerNoHead::PackDealerNoHead(const PackDealerNoHead& c)
+	PackDealerNoHead::PackDealerNoHead(const PackDealerNoHead& c):PackDealerCommon(c)
 	{
-		auto mainc = MainCmd::Invalid;
+		auto mainc = MainCmd::MainCmdBegin;
 		this->_channel = c._channel;
 		PtTransRouterElement funcs = getRouterTransByMainC(mainc);
 		assert(funcs != nullptr);
@@ -106,16 +107,6 @@ namespace SMNetwork
 		{
 			SPDLOG_ERROR("mainc cmd {} have no routers ", magic_enum::enum_name(mainc));
 		}
-	}
-
-	MainCmd PackDealerNoHead::getMainc()
-	{
-		return MainCmd::Invalid;
-	}
-
-	std::string_view PackDealerNoHead::getMsg()
-	{
-		return string_view{ _msg};
 	}
 
 	

@@ -1,6 +1,7 @@
 #pragma once
 #include "networkinterfaceExport.h"
 #include "magic_enum.hpp"
+#include "templatefuncs.h"
 #include "asio/awaitable.hpp"
 #include "fmt/format.h"
 #include "Utils.h"
@@ -19,7 +20,7 @@ using std::tuple;
 using std::make_tuple;
 using tsl::htrie_map;
 
-typedef std::function<asio::awaitable<string>(string, string)> RouterFuncType;
+typedef std::function<asio::awaitable<RouterFuncReturnType>(string&, string)> RouterFuncType;
 typedef shared_ptr<RouterFuncType> ConRouterType;
 typedef map<string, ConRouterType> RoutersType;
 typedef RoutersType* PtRoutersType;
@@ -36,6 +37,10 @@ typedef map<MainCmd, TransRouterElement> TransRoutersType;
 
 namespace SMNetwork
 {
+    NETWORKINTERFACE_EXPORT void initjwtconfig(string_view issuer = "alqaz", string_view type = "JWS", string_view key = "key", uint32_t expiresecond = 3600);
+    NETWORKINTERFACE_EXPORT void initjwtconfig(JWTConf& jwtconf);
+    NETWORKINTERFACE_EXPORT bool isjwttokenright(string_view token);
+    NETWORKINTERFACE_EXPORT string getjwttoken();
 
     NETWORKINTERFACE_EXPORT bool initNetwork();
 
@@ -59,10 +64,10 @@ namespace SMNetwork
 
     NETWORKINTERFACE_EXPORT void  asyn_nng_demo();
 
-template <class Mainc, class AssC>
-tuple<string, string> combinePath(Mainc mainc, AssC assc)
+template <class MainC, class AssC>
+tuple<string, string> combinePath(MainC mainc, AssC assc)
 {
-    auto v = SMUtils::packheads(mainc, (short)(assc));
+    auto v = SMUtils::packheads(magic_enum::enum_integer(mainc), magic_enum::enum_integer(assc));
 
     return make_tuple<string, string>(std::move(v), fmt::format("/{}/{}", magic_enum::enum_name(mainc), magic_enum::enum_name(assc)));
 }

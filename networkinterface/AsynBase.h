@@ -62,13 +62,14 @@ namespace SMNetwork
 			asio::awaitable<string> reqrep(string_view req)
 			{
 				string ret;
+				*(_dealer->reqSeq()) = SMUtils::getSeqNum();
 				if (msg != nullptr)
 				{
 					nng_msg_clear(msg);
 					msg = nullptr;
 				}
 				_ev = std::make_shared<SMHotupdate::CoEvent>();
-				auto ppx = _dealer->pack(req);
+				auto ppx = _dealer->pack(_dealer->reqSeq(), req);
 				resp = &ret;
 				senddata(string_view(*ppx));
 				BEGIN_ASIO;
@@ -82,7 +83,8 @@ namespace SMNetwork
 				string ret;
 				_ev = std::make_shared<SMHotupdate::CoEvent>();
 				_dealer->setAssc(assc);
-				auto ppx = _dealer->pack(req);
+				*(_dealer->reqSeq()) = SMUtils::getSeqNum();
+				auto ppx = _dealer->pack(_dealer->reqSeq(), req);
 				resp = &ret;
 				if (!senddata(string_view(*ppx)))
 				{
@@ -103,8 +105,9 @@ namespace SMNetwork
 					nng_msg_clear(msg);
 					msg = nullptr;
 				}
+				*(_dealer->reqSeq()) = SMUtils::getSeqNum();
 				_ev = std::make_shared<SMHotupdate::CoEvent>();
-				auto ppx = _dealer->pack(req);
+				auto ppx = _dealer->pack(_dealer->reqSeq(), req);
 				resp = &ret;
 				senddata(string_view(*ppx));
 				BEGIN_ASIO;
@@ -119,7 +122,8 @@ namespace SMNetwork
 				string ret;
 				_ev = std::make_shared<SMHotupdate::CoEvent>();
 				_dealer->setAssc(assc);
-				auto ppx = _dealer->pack(req);
+				*(_dealer->reqSeq()) = SMUtils::getSeqNum();
+				auto ppx = _dealer->pack(_dealer->reqSeq(), req);
 				resp = &ret;
 				if (!senddata(string_view(*ppx)))
 				{

@@ -23,48 +23,59 @@ enum class DatabaseMode
 class DatabaseRemoteConfig
 {
   public:
+      DatabaseRemoteConfig(uint16_t port, string ip="127.0.0.1", bool usessl = false) :_ip(ip), _port(port), _useSSL(usessl)
+      {
+	      
+      }
     string _ip;
     uint16_t _port;
     bool _useSSL;
 };
 
-typedef struct
+class SqliteLocalConfig
 {
-    string _file;
-    string _filepath;
-} SqliteLocalConfig;
+public:
+    string _file{"db.db"};
+    string _filepath{"./"};
+};
 
-typedef struct
+class PostgresqlLocalConfig
 {
-    string _dbname;
-    bool _useSSL;
-    string _addr;
-    uint16_t _port;
-    string username;
-    string password;
-} PostgresqlLocalConfig;
+public:
+    string _dbname{"demo"};
+    bool _useSSL{false};
+    string _addr{"127.0.0.1"};
+    uint16_t _port{5432};
+    string username{"postgres"};
+    string password{"123456"};
+};
 
-typedef struct
+class RedisLocalConfig
 {
-    bool _useSSL;
-    string _addr;
-    uint16_t _port;
-    string username;
-    string password;
-} RedisLocalConfig;
+public:
+    bool _useSSL{false};
+    string _addr{"127.0.0.1"};
+    uint16_t _port{6379};
+    string username{""};
+    string password{""};
+} ;
 
 class DatabaseConfigCommon
 {
   public:
-    DatabaseType type;
-    DatabaseMode _model;
-    bool _debug;
+    DatabaseType type{ DatabaseType::Sqlite};
+    DatabaseMode _model{ DatabaseMode::Embed};
+    bool _debug{false};
 };
 
 
 class DatabaseConfig
 {
   public:
+    DatabaseConfig():_tcpServer(5400), _nngServer(5401, "*"), _tcpClient(5400), _nngClient(5401)
+    {
+	    
+    }
     DatabaseConfigCommon _comm;
     DatabaseRemoteConfig _tcpServer;
     DatabaseRemoteConfig _nngServer;
@@ -78,12 +89,12 @@ class DatabaseConfig
 class HttpConfig
 { 
   public:
-    string _addr;
-    uint16_t _port;
-    string _rootHtmlPath;
-    string _rootJsonPath;
-    string _resRootPath;
-    string _wsPath;
+    string _addr = "127.0.0.1";
+    uint16_t _port{80};
+    string _rootHtmlPath{"http"};
+    string _rootJsonPath{"http"};
+    string _resRootPath{"dist"};
+    string _wsPath{"ws"};
 };
 
 class TimeZoneConfig
@@ -95,16 +106,16 @@ public:
 class NanoRepConf
 {
   public:
-    string _addr;
-    uint16_t _port;
+    string _addr{"127.0.0.1"};
+    uint16_t _port{9001};
 };
 
 class TransportConfig
 {
   public:
-    string _addr;
-    uint16_t _port;
-    uint16_t _timeout=5000;
+    string _addr{"127.0.0.1"};
+    uint16_t _port{10087};
+    uint16_t _timeout{3600};
 };
 
 class LogRemoteConfig
@@ -117,12 +128,13 @@ class LogRemoteConfig
 class LogContextConfig
 {
   public:
-    string _format;
-    int _level;
-    string _file;
-    string _filepath;
-    uint64_t _fileRollSize;
-    int rollfilecount;
+    string _format{"[%H:%M:%S %z] [%n] [%@] [%^%L%$] [%!] [thread %t] %v"};
+    int _level{1};
+    string _file{"log.log"};
+    string _filepath{"./"};
+    string _logger{ "logername" };
+    uint64_t _fileRollSize{1000000000};
+    int _rollfilecount{10};
 };
 
 class LogConfig
@@ -135,11 +147,12 @@ class LogConfig
 class JWTConf
 {
 public:
-    string _issuer;
-    string _type;
-    string _key;
-    string _superuser;
-    string _superpass;
+    string _issuer{"alqaz"};
+    string _type{"JWS"};
+    string _key{"alqaz"};
+    string _superuser{"alqaz"};
+    string _superpass{"123456"};
+    int _timeout{ 60 };
     tsl::htrie_set<char> _noAuthRouter;
 };
 

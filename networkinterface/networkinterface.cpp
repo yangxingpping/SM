@@ -1,10 +1,13 @@
 
 #include "networkinterface.h"
 #include "IOContextManager.h"
+#include "Https.h"
 #include <memory>
 #include <thread>
 #include <map>
 #include <string>
+#include "jwt-cpp/jwt.h"
+#include "Configs.h"
 #include "coros.h"
 #include "templatefuncs.h"
 
@@ -29,9 +32,68 @@ static shared_ptr<tsl::htrie_map<char, ConRouterType>> _handlers = nullptr;
 static std::map<string, string> _r2;
 std::map<string, string> _r3;
 namespace SMNetwork {
+
+	static std::string _issuer{ "alqaz" };
+	static std::string _type{ "JWS" };
+	static std::string _key{ "key" };
+	static uint32_t _expiresecond{ 3600 };
+	static bool _inited{ false };
+
+	void initjwtconfig(string_view issuer/*="alqaz"*/, string_view type/*="JWS"*/, string_view key/*="key"*/, uint32_t expiresecond/*=3600*/)
+	{
+		_issuer = issuer;
+		_type = type;
+		_key = key;
+		_expiresecond = expiresecond;
+	}
+
+	void initjwtconfig(JWTConf& jwtconf)
+	{
+		_issuer = jwtconf._issuer;
+		_type = jwtconf._type;
+		_key = jwtconf._key;
+		_expiresecond = jwtconf._timeout;
+	}
+
+	bool isjwttokenright(string_view token)
+	{
+		bool bret{ false };
+		if (token.empty())
+		{
+			return bret;
+		}
+		auto ver = jwt::verify().allow_algorithm(jwt::algorithm::hs256{ _key }).with_issuer(_issuer);
+		BEGIN_STD;
+		auto decoded = jwt::decode(token.data());
+		std::error_code ec;
+		ver.verify(decoded, ec);
+		if (ec.value() != 0)
+		{
+			SPDLOG_WARN("jwt token {} failed with {} {}", token, ec.value(), ec.message());
+		}
+		bret = (ec.value() == 0) ? true : false;
+		END_STD;
+
+		return bret;
+	}
+
+	string getjwttoken()
+	{
+		string ret;
+		auto token = jwt::create();
+		ret = token.set_issuer(_issuer).set_type(_type).set_expires_at(std::chrono::system_clock::now() + std::chrono::seconds(_expiresecond)).set_payload_claim("name", jwt::claim(std::string("alqaz"))).sign(jwt::algorithm::hs256{ _key });
+		return ret;
+	}
+
 	bool initNetwork()
 	{
 		bool bret = true;
+		if (_inited)
+		{
+			return bret;
+		}
+		initjwtconfig(CONFINST.getJWTConf());
+		Https::sInit();
 		return bret;
 	}
 
@@ -167,16 +229,16 @@ namespace SMNetwork {
 
 	void asyn_nng_demo()
 	{
-		auto serverfunc = std::make_shared<RouterFuncType>([](std::string req, string token)->asio::awaitable<std::string>
+		auto serverfunc = std::make_shared<RouterFuncType>([](std::string& req, string token)->asio::awaitable<RouterFuncReturnType>
 			{
-				std::string ret{ "fuck" };
+				RouterFuncReturnType ret = std::make_shared<string>(string("fuck"));
 
 				co_return ret;
 			});
 
 		uint16_t portx = 999;
 
-		SMNetwork::addRouterTrans(MainCmd::Invalid, 0, serverfunc);
+		SMNetwork::addRouterTrans(MainCmd::MainCmdBegin, 0, serverfunc);
 
 		shared_ptr<SMNetwork::PackDealerBase> ps = shared_ptr<SMNetwork::PackDealerBase>(new SMNetwork::PackDealerNoHead(ChannelType::EchoServer));
 

@@ -12,7 +12,7 @@ using std::string;
 
 namespace SMNetwork
 {
-	std::string* PackDealerNoMain::unpack(std::string& pack)
+	std::string* PackDealerNoMain::unpack(seqNumType* seqnum, std::string& pack)
 	{
 		thread_local string ret;
 		ret.clear();
@@ -25,7 +25,7 @@ namespace SMNetwork
 		return &ret;
 	}
 
-	std::string* PackDealerNoMain::pack(std::string_view msg, uint16_t assc)
+	std::string* PackDealerNoMain::pack(seqNumType* seqnum, std::string_view msg, uint16_t assc)
 	{
 		thread_local string ret;
 		ret.clear();
@@ -37,30 +37,30 @@ namespace SMNetwork
 	{
 		thread_local std::string drep;
 		drep.clear();
-		PtTransRouterElement funcs = getRouterTransByMainC(_mainc);
+		PtTransRouterElement funcs = getRouterTransByMainC(MainCmd::DefaultMain);
 		SPDLOG_INFO("channel type {}", magic_enum::enum_name(_channel));
 
 		string strreq;
-		auto pstrreq = unpack(msg);
+		auto pstrreq = unpack(reqSeq(), msg);
 		auto func2 = funcs->find(_assc);
 		assert(func2 != funcs->end());
 		if (func2 == funcs->end())
 		{
-			SPDLOG_ERROR("  templ mainc = {}, assc = {}, deal func = {}", magic_enum::enum_name(_mainc), _assc, fmt::ptr(funcs));
+			SPDLOG_ERROR("  templ mainc = {}, assc = {}, deal func = {}", magic_enum::enum_name(MainCmd::DefaultMain), _assc, fmt::ptr(funcs));
 			co_return nullptr;
 		}
-		string ret;
+		RouterFuncReturnType ret;
 		string token;
 		BEGIN_ASIO;
 		ret = co_await(*(func2->second))(*pstrreq, token);
 		END_ASIO;
-		SPDLOG_INFO("send to client data: [{}], size:[{}]", ret, ret.length());
-		if (ret.empty())
+		if (!ret || ret->empty())
 		{
-			SPDLOG_ERROR("  mainc = {}, assc = {} response 0", magic_enum::enum_name(_mainc), _assc);
+			SPDLOG_ERROR("  mainc = {}, assc = {} response 0", magic_enum::enum_name(MainCmd::DefaultMain), _assc);
 			co_return nullptr;
 		}
-		auto drep2 = pack(string_view(ret), _assc);
+		SPDLOG_INFO("send to client data: [{}], size:[{}]", *ret, ret->length());
+		auto drep2 = pack(reqSeq(), string_view(*ret), _assc);
 
 		co_return drep2;
 
@@ -73,33 +73,28 @@ namespace SMNetwork
 		return ret;
 	}
 
-	PackDealerNoMain::PackDealerNoMain(MainCmd mainc, ChannelType channel) : _channel(channel), _mainc(mainc)
+	PackDealerNoMain::PackDealerNoMain(ChannelType channel) : PackDealerCommon(channel)
 	{
-		PtTransRouterElement funcs = getRouterTransByMainC(_mainc);
+		PtTransRouterElement funcs = getRouterTransByMainC(MainCmd::DefaultMain);
 		assert(funcs != nullptr);
 		if (funcs == nullptr)
 		{
-			SPDLOG_ERROR("mainc cmd {} have no routers ", magic_enum::enum_name(_mainc));
+			SPDLOG_ERROR("mainc cmd {} have no routers ", magic_enum::enum_name(MainCmd::DefaultMain));
 		}
 	}
 
 
-	PackDealerNoMain::PackDealerNoMain(const PackDealerNoMain& c)
+	PackDealerNoMain::PackDealerNoMain(const PackDealerNoMain& c):PackDealerCommon(c)
 	{
-		this->_mainc = c._mainc;
-		this->_channel = c._channel;
-		PtTransRouterElement funcs = getRouterTransByMainC(this->_mainc);
+		PtTransRouterElement funcs = getRouterTransByMainC(MainCmd::DefaultMain);
 		assert(funcs != nullptr);
 		if (funcs == nullptr)
 		{
-			SPDLOG_ERROR("mainc cmd {} have no routers ", magic_enum::enum_name(this->_mainc));
+			SPDLOG_ERROR("mainc cmd {} have no routers ", magic_enum::enum_name(MainCmd::DefaultMain));
 		}
 	}
 
-	MainCmd PackDealerNoMain::getMainc()
-	{
-		return _mainc;
-	}
+
 
 	uint16_t PackDealerNoMain::getAssc()
 	{
@@ -111,10 +106,7 @@ namespace SMNetwork
 		_assc = assc;
 	}
 
-	std::string_view PackDealerNoMain::getMsg()
-	{
-		return string_view{ _msg};
-	}
+
 
 	
 }

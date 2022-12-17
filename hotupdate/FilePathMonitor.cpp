@@ -106,7 +106,6 @@ asio::awaitable<string_view> FilePathMonitor::asyncGetResource(std::string path)
     BEGIN_ASIO;
 	rep = co_await filex->asyncGetData();
     END_ASIO;
-    SPDLOG_INFO("resource data len {}", rep.length());
     if (rep.empty())
     {
         SPDLOG_WARN("get url {} response empty", path);

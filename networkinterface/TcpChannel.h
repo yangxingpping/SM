@@ -46,13 +46,14 @@ class TcpChannel : public TcpStreamHandler
         
     }
 
-    template<class AssType>
-    asio::awaitable<std::string*> clientEntry(shared_ptr<PackDealerBase> packdealer, std::string& req, AssType assc)
+    asio::awaitable<std::string*> clientEntry(shared_ptr<PackDealerBase> packdealer, std::string& req)
     {
         thread_local std::string ret;
         ret.clear();
-        std::string* pack = packdealer->pack(string_view(req), (uint16_t)(assc));
+        *(packdealer->reqSeq()) = SMUtils::getSeqNum();
+        std::string* pack = packdealer->pack(packdealer->reqSeq(), string_view(req), packdealer->getAssc());
         bool succ{ false };
+        SPDLOG_INFO("start the [{}] req {}", *(packdealer->reqSeq()), req);
 		BEGIN_ASIO;
         succ = co_await sendPack(*pack);
         END_ASIO;
@@ -63,7 +64,11 @@ class TcpChannel : public TcpStreamHandler
 			if (bsucc)
 			{
 				string msgrep;
-                auto rep = packdealer->unpack(*recvd);
+                auto rep = packdealer->unpack(packdealer->repSeq(), *recvd);
+                if (*packdealer->reqSeq() != *packdealer->repSeq())
+                {
+                    SPDLOG_WARN("req seq {} != rep seq {}", *packdealer->reqSeq(), *packdealer->repSeq());
+                }
                 ret.insert(ret.end(), rep->begin(), rep->end());
 			}
 		}

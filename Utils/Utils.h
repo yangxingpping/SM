@@ -1,7 +1,7 @@
 #pragma once
 #include "UtilsExport.h"
 #include "enums.h"
-
+#include "magic_enum.hpp"
 #include "Structs.h"
 
 #include <string_view>
@@ -11,6 +11,7 @@
 #include <deque>
 #include <map>
 #include <tuple>
+#include <functional>
 
 using std::vector;
 using std::string;
@@ -18,7 +19,7 @@ using std::map;
 using std::string_view;
 using std::deque;
 
-
+using seqNumType = uint32_t;
 
 enum class ServeType : uint64_t
 {
@@ -33,21 +34,6 @@ enum class ServeType : uint64_t
 namespace SMUtils
 {
 	
-	UTILS_EXPORT bool SInitLog(const LogConfig& conf);
-	UTILS_EXPORT bool InitLog(const LogConfig& conf);
-	
-
-	const static size_t _headLen = sizeof(cmdhead);
-	static std::string _invalidReq = "invalid request";
-	static std::string _invalidHead = "invalid head";
-	const static int _invalidAss = 0;
-
-	/*************************************
-	 * as jwt-cpp depend openssl, may be follow jwt-cpp api should remove to other module(networkinterface) later
-	 * ***********************************/
-	UTILS_EXPORT void initjwtconfig(string_view issuer="alqaz", string_view type="JWS", string_view key="key", uint32_t expiresecond=3600);
-	UTILS_EXPORT bool isjwttokenright(string_view token);
-	UTILS_EXPORT string getjwttoken();
 
 	UTILS_EXPORT void packuint16(std::string& dst, uint16_t src);
 
@@ -57,7 +43,7 @@ namespace SMUtils
 
 	UTILS_EXPORT bool unpackuint32(std::string& src, uint32_t& dst);
 
-	UTILS_EXPORT string packheads(MainCmd mainc, short assc);
+	UTILS_EXPORT string packheads(uint16_t mainc, short assc);
 
 	UTILS_EXPORT string packlen(size_t len);
 
@@ -71,6 +57,7 @@ namespace SMUtils
 
 	UTILS_EXPORT deque<uint8_t> packcmdrep(MainCmd mainc, short assc, size_t len);
 
+	UTILS_EXPORT seqNumType getSeqNum();
 
 	UTILS_EXPORT string getConfigPrefixPath();
 
@@ -85,19 +72,46 @@ namespace SMUtils
 		ret.insert(ret.end(), msg.begin(), msg.end());
 	}
 
+	template<class AssType>
+	static void  packmaincmd3(seqNumType seqnum, MainCmd mainc, AssType assc, string& ret, string_view msg)
+	{
+		packuint32(ret, static_cast<uint32_t>(seqnum));
+		packuint16(ret, static_cast<uint16_t>(mainc));
+		packuint16(ret, static_cast<uint16_t>(assc));
+		packuint32(ret, static_cast<uint32_t>(msg.size()));
+		ret.insert(ret.end(), msg.begin(), msg.end());
+	}
+
 	UTILS_EXPORT void  packmaincmd3(uint16_t assc, string& ret, string_view msg);
 
 	UTILS_EXPORT void  packmaincmd3(string& ret, string_view msg);
 
 	UTILS_EXPORT map<string, string> parseQueryString(string str);
 
+	UTILS_EXPORT bool addOpDBValue2Name(int v, string_view name);
+
+	UTILS_EXPORT string_view getOpDBNameByValue(int v);
+
+	UTILS_EXPORT bool addMainValue2Name(int v, string_view name);
+
+	UTILS_EXPORT string packstring(string_view msg);
+	UTILS_EXPORT string_view unpackstring(string_view msg);
+
+	UTILS_EXPORT string_view getMainNameByValue(int v);
+
 	template<class AssType, class MsgContainer>
-	static bool  uppackmaincmd3(MainCmd& mainc, AssType& assc, size_t& msglen, string& src, MsgContainer& msg)
+	static bool  uppackmaincmd3(seqNumType* seqnum, MainCmd& mainc, AssType& assc, size_t& msglen, string& src, MsgContainer& msg)
 	{
+		uint32_t iseqnum;
 		uint16_t imainc;
 		uint16_t iassc;
 		uint32_t imsglen;
 		bool bret{ false };
+		bret = unpackuint32(src, iseqnum);
+		if (!bret)
+		{
+			return false;
+		}
 		bret = unpackuint16(src, imainc);
 		if (!bret)
 		{
@@ -114,6 +128,7 @@ namespace SMUtils
 			return false;
 		}
 		msg.insert(msg.end(), src.begin(), src.end());
+		*seqnum = iseqnum;
 		mainc = (MainCmd)(imainc);
 		assc = (AssType)(iassc);
 		msglen = (size_t)(imsglen);
@@ -122,12 +137,18 @@ namespace SMUtils
 	}
 
 	template<class AssType, class MsgContainer>
-	static bool  uppackmaincmd3(MainCmd& mainc, AssType& assc, size_t& msglen, string_view src, MsgContainer& msg)
+	static bool  uppackmaincmd3(seqNumType* seqnum, MainCmd& mainc, AssType& assc, size_t& msglen, string_view src, MsgContainer& msg)
 	{
+		uint32_t iseq;
 		uint16_t imainc;
 		uint16_t iassc;
 		uint32_t imsglen;
-		auto [s1, t1] = unpackuint16(src, imainc);
+		auto [s0, t0] = unpackuint32(src, iseq);
+		if (!s0)
+		{
+			return false;
+		}
+		auto [s1, t1] = unpackuint16(t0, imainc);
 		if (!s1)
 		{
 			return false;
@@ -146,6 +167,7 @@ namespace SMUtils
 		mainc = (MainCmd)(imainc);
 		assc = (AssType)(iassc);
 		msglen = (size_t)(imsglen);
+		*seqnum = iseq;
 		return true;
 	}
 
@@ -220,4 +242,71 @@ namespace SMUtils
 		return true;
 	}
 
+	template<class DBEnums>
+	bool cacheDBValuesNames()
+	{
+		bool bret = true;
+		auto pairs = magic_enum::enum_entries<DBEnums>();
+		for(const auto& p: pairs)
+		{
+			bret = addOpDBValue2Name(magic_enum::enum_integer(std::get<0>(p)), std::get<1>(p));
+			if(!bret)
+			{
+				break;
+			}
+		}
+		assert(bret);
+		return bret;
+	}
+
+	template<class MainEnums>
+	bool cacheMainValuesNames()
+	{
+		bool bret = true;
+		auto pairs = magic_enum::enum_entries<MainEnums>();
+		for (const auto& p : pairs)
+		{
+			bret = addMainValue2Name(magic_enum::enum_integer(std::get<0>(p)), std::get<1>(p));
+			if (!bret)
+			{
+				break;
+			}
+		}
+		assert(bret);
+		return bret;
+	}
+
+	//https://stackoverflow.com/questions/1198260/how-can-you-iterate-over-the-elements-of-an-stdtuple
+
+	template <
+		size_t Index = 0, // start iteration at 0 index
+		typename TTuple,  // the tuple type
+		size_t Size =
+		std::tuple_size_v<
+		std::remove_reference_t<TTuple>>, // tuple size
+		typename TCallable, // the callable to bo invoked for each tuple item
+		typename... TArgs   // other arguments to be passed to the callable 
+		>
+		void for_each(TTuple&& tuple, TCallable&& callable, TArgs&&... args)
+	{
+		if constexpr (Index < Size)
+		{
+			if constexpr (std::is_assignable_v<bool&, std::invoke_result_t<TCallable&&, TArgs&&..., decltype(std::get<Index>(tuple))>>)
+			{
+				if (!std::invoke(callable, args..., std::get<Index>(tuple)))
+					return;
+			}
+			else
+			{
+				std::invoke(callable, args..., std::get<Index>(tuple));
+			}
+
+			if constexpr (Index + 1 < Size)
+				for_each<Index + 1>(
+					std::forward<TTuple>(tuple),
+					std::forward<TCallable>(callable),
+					std::forward<TArgs>(args)...);
+		}
+	}
+	
 }

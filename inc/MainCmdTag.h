@@ -30,8 +30,6 @@ class MainCmdTag
     MainCmdTag()
     {}
 
-    virtual PackType getPackType() { return PackType::FixMainSubHead; };
-
     virtual void init(ServeMode mode) {};
 
     virtual awaitable<string> dealMsg(uint16_t ass, string_view msg)

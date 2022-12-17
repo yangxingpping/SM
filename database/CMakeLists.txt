@@ -42,7 +42,7 @@ generate_export_header(database EXPORT_FILE_NAME ${CMAKE_CURRENT_SOURCE_DIR}/../
 
 
 
-target_link_libraries(database PRIVATE hashlibrary  PRIVATE uSockets2  PRIVATE Utils PRIVATE configs PRIVATE networkinterface PRIVATE spdlog::spdlog PRIVATE hotupdate PRIVATE date::date date::date-tz)
+target_link_libraries(database PRIVATE nng::nngpp  PRIVATE ZLIB::ZLIB PRIVATE OpenSSL::SSL OpenSSL::Crypto PRIVATE unofficial::sqlite3::sqlite3 PRIVATE sqlpp11::sqlpp11 PRIVATE hashlibrary  PRIVATE uSockets2  PRIVATE Utils PRIVATE configs PRIVATE networkinterface PRIVATE spdlog::spdlog PRIVATE hotupdate PRIVATE date::date date::date-tz)
 
 
 

@@ -68,7 +68,8 @@ namespace SMNetwork
 			SPDLOG_WARN("dealer is nullptr");
 			return ret;
 		}
-		auto senddata = _dealer->pack(string_view(req));
+		*(_dealer->reqSeq()) = SMUtils::getSeqNum();
+		auto senddata = _dealer->pack(_dealer->reqSeq(), string_view(req));
 		std::string strreq{ senddata->begin(), senddata->end() };
 		nnop = nng_send(sock, &strreq[0], strreq.length(), 0);
 		if (nnop != 0)
@@ -91,7 +92,7 @@ namespace SMNetwork
 			ptrep = nullptr;
 			return ret;
 		}
-		auto prep = _dealer->unpack(string_view{ (char*)ptrep, len });
+		auto prep = _dealer->unpack(_dealer->reqSeq(), string_view{ (char*)ptrep, len });
 		ret = *prep;
 		nng_free(ptrep, len);
 		ptrep = nullptr;

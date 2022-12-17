@@ -143,8 +143,9 @@ namespace SMNetwork
 				nng_msg_clear(w->msg);
 				w->msg = nullptr;
 			}
+			*(w->_dealer->reqSeq()) = SMUtils::getSeqNum();
 			w->_ev = std::make_shared<SMHotupdate::CoEvent>();
-			auto ppx = w->_dealer->pack(string_view(req));
+			auto ppx = w->_dealer->pack(w->_dealer->reqSeq(), string_view(req));
 			nng_msg_alloc(&w->msg, 0);
 			nng_msg_append(w->msg, ppx->data(), ppx->length());
 			nng_aio_set_msg(w->aio, w->msg);

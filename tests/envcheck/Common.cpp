@@ -6,64 +6,90 @@
 #include <filesystem>
 #include "catch.hpp"
 #include "jwt-cpp/jwt.h"
+#include "Utils.h"
+#include "spdlog/spdlog.h"
+#include "templatefuncs.h"
+#include "boost/callable_traits/return_type.hpp"
+#include "boost/callable_traits/args.hpp"
 #include <thread>
 
 using namespace std;
 
 #include "Utils.h"
 
-
-
-
-
-TEST_CASE("jwt 1", "encode and decode right")
+struct Arg1
 {
-	auto ver = jwt::verify().allow_algorithm(jwt::algorithm::hs256{"key"}).with_issuer("alqaz");
-	auto token = jwt::create();
-	auto strtoken = token.set_issuer("alqaz").set_type("JWS").set_payload_claim("sample", jwt::claim(std::string("test")))
-		.set_expires_at(std::chrono::system_clock::now() + std::chrono::seconds(3600))
-		.sign(jwt::algorithm::hs256{ "key" });
+	int _a;
+};
+REFLECTION(Arg1, _a);
+struct Arg2
+{
+	int _b;
+};
+REFLECTION(Arg2, _b);
 
-	auto decoded = jwt::decode(strtoken);
-	auto payloads = decoded.get_payload();
-	std::error_code ec;
-	ver.verify(decoded, ec);
-	if (ec.value() != 0)
+template<typename F>
+void func(F func)
+{
+	using RetType = boost::callable_traits::return_type_t<F>;
+	using Args = boost::callable_traits::args_t<F>;
+	RetType ret;
+	Args args;
+	auto x = [](string msg)
 	{
-		SPDLOG_ERROR("verify error code {}, error msg {}", ec.value(), ec.message());
-	}
-	REQUIRE(ec.value()==0);
+		size_t offset{ 0 };
+		auto lenx = std::tuple_size<Args>::value;
+		/*for (int i = 0; i < lenx; ++i)
+		{
+			uint32_t paramlen = unpackuint32(string_view(msg.data + offset, msg.length() - offset));
+			
+		}*/
+	};
+	Arg1 a{ 1 };
+	Arg2 b{ 2 };
+	string params = SMUtils::packstring(string_view(*my_to_string(a)));
+	params += SMUtils::packstring(string_view(*my_to_string(b)));
+
+	int i = 0;
 }
 
-TEST_CASE("jwt 2", "encode and decode with wrong key")
+int add(Arg1 a, Arg2 b)
 {
-	auto ver = jwt::verify().allow_algorithm(jwt::algorithm::hs256{ "key" }).with_issuer("alqaz");
-	auto token = jwt::create();
-	auto strtoken = token.set_issuer("alqaz").set_type("JWS").set_payload_claim("sample", jwt::claim(std::string("test")))
-		.set_expires_at(std::chrono::system_clock::now() + std::chrono::seconds(3600))
-		.sign(jwt::algorithm::hs256{ "keyx" });
-
-	auto decoded = jwt::decode(strtoken);
-	auto payloads = decoded.get_payload();
-	std::error_code ec;
-	ver.verify(decoded, ec);
-	REQUIRE_FALSE(ec.value() == 0);
+	return a._a + b._b;
 }
 
-TEST_CASE("jwt 3", "encode and decode with timeout")
+TEST_CASE("test parse and unparse message", "Utils")
 {
-	auto ver = jwt::verify().allow_algorithm(jwt::algorithm::hs256{ "key" }).with_issuer("alqaz");
-	auto token = jwt::create();
-	auto strtoken = token.set_issuer("alqaz").set_type("JWS").set_payload_claim("sample", jwt::claim(std::string("test")))
-		.set_expires_at(std::chrono::system_clock::now() + std::chrono::microseconds(1))
-		.sign(jwt::algorithm::hs256{ "key" });
-	std::this_thread::sleep_for(std::chrono::milliseconds(10));
-	auto decoded = jwt::decode(strtoken);
-	auto payloads = decoded.get_payload();
-	std::error_code ec;
-	ver.verify(decoded, ec);
-	REQUIRE_FALSE(ec.value() == 0);
+	using namespace SMUtils;
+	
 }
+
+TEST_CASE("test tuple unpack", "Utils")
+{
+	using namespace SMUtils;
+	Arg1 a{ 1 };
+	Arg2 b{ 2 };
+	auto pp = my_to_string(a);
+	string params = packstring(*pp);
+	pp = my_to_string(b);
+	params += packstring(*pp);
+	a._a = 10;
+	b._b = 20;
+	size_t offset{ 0 };
+	auto tt = std::make_tuple(a, b);
+	SMUtils::for_each(tt, [&](auto& item) {
+		auto strparam = unpackstring(string_view(params.data() + offset, params.length() - offset));
+	if (!my_json_parse_from_string(item, strparam))
+	{
+		return;
+		}
+	offset += (strparam.length() + sizeof(uint32_t));
+		
+		});
+
+	int i = 1;
+}
+
 
 TEST_CASE("local byte order to network order", "Utils")
 {

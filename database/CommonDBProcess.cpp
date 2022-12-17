@@ -5,6 +5,7 @@
 #include "Utils.h"
 #include "dbCommon.h"
 #include "CoEvent.h"
+#include "sha256.h"
 #include "jwt-cpp/jwt.h"
 
 #include "sqlpp11/sqlpp11.h"
@@ -26,6 +27,8 @@ namespace SMDB
 	static mutex _genmut;
 	static map<string, map<string, UserGenInfoItem>> _genUsers;
 
+	//static SHA256 _sha256;
+
 	RegistRep CommonDBProcess::sregist(RegistReq req)
 	{
 		RegistRep rep;
@@ -40,7 +43,7 @@ namespace SMDB
 		}
 		else
 		{
-			req.password = _sha256(req.phone + req.password);
+			req.password = req.password;// _sha256(req.phone + req.password);
 			(*db)(insert_into(user).set(user.name = req.username, user.passwd = req.password, user.phone = req.phone));
 			auto token = jwt::create();
 			rep.token = token.set_issuer("alqaz").set_type("JWS").set_payload_claim("sample", jwt::claim(std::string("test")))
@@ -60,7 +63,7 @@ namespace SMDB
 		bool bchecked = false;
 		if (!req.username.empty() && !req.phone.empty())
 		{
-			req.password = _sha256(req.phone + req.password);
+			req.password = req.password;// _sha256(req.phone + req.password);
 			auto have = (*db)(select(count(user.name)).from(user).where(user.name == req.username and user.passwd == req.password and user.phone == req.phone)).front().count.value();
 			rep.username = req.username;
 		}
@@ -76,7 +79,7 @@ namespace SMDB
 		}
 		else if (!req.phone.empty())
 		{
-			req.password = _sha256(req.phone + req.password);
+			req.password = req.password;// _sha256(req.phone + req.password);
 			for (const auto& row : (*db)(select(all_of(user)).from(user).where(user.phone == req.phone and user.passwd == req.password)))
 			{
 
@@ -99,7 +102,7 @@ namespace SMDB
 		else
 		{
 			auto token = jwt::create();
-			rep.token = SMUtils::getjwttoken();
+			rep.token = SMNetwork::getjwttoken();
 		}
 		SPDLOG_INFO("finish send query to database");
 		return rep;
@@ -232,9 +235,11 @@ namespace SMDB
 
 	void CommonDBProcess::init(ServeMode mode)
 	{
+		BEGIN_STD;
 		getUserGenInfoReq req;
 		req.fromdb = 1;
 		sgetUserGenInfo(req);
+		END_STD;
 	}
 
 }

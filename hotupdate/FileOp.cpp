@@ -36,7 +36,9 @@ asio::awaitable<string_view> fileOp::asyncGetData()
             co_return ret;
         }
         BEGIN_ASIO;
+#if defined(ASIO_HAS_IO_URING) || defined(_WIN32) 
         loadflag = co_await fileOpASync::getData(_datas, _path, 0, filesize);
+#endif
         if (!loadflag)
         {
             loadflag = co_await fileOpSync::getData(_datas, _path, 0, filesize);

@@ -1,32 +1,28 @@
-# Prerequisites
-*.d
+build*/
+external/*
+!external/CMakeLists.txt
+*.sublime-workspace
+.tags
+tags
+*.pyc
+*.swp
+*.swo
 
-# Compiled Object files
-*.slo
-*.lo
-*.o
-*.obj
+system.txt
 
-# Precompiled Headers
-*.gch
-*.pch
+*.log
+/.vscode/
+/source/.vscode/
 
-# Compiled Dynamic libraries
-*.so
-*.dylib
-*.dll
+/source/inc/export_flags/
 
-# Fortran module files
-*.mod
-*.smod
+/inc/export_flags/
+/inc/Windows/
+/inc/Linux/
+/inc/os/Windows/
+/inc/os/Linux/
+/inc/os/Darwin/
+/inc/Darwin/
+/win_build/
+/.vs/
 
-# Compiled Static libraries
-*.lai
-*.la
-*.a
-*.lib
-
-# Executables
-*.exe
-*.out
-*.app

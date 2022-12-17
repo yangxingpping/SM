@@ -17,6 +17,8 @@
 
 /* Todo: this file should lie in networking/bsd.c */
 
+#define __APPLE_USE_RFC_3542
+
 #include "libusockets.h"
 #include "internal/internal.h"
 
@@ -46,6 +48,7 @@ struct us_internal_udp_packet_buffer {
     struct mmsghdr msgvec[LIBUS_UDP_MAX_NUM];
     struct iovec iov[LIBUS_UDP_MAX_NUM];
     struct sockaddr_storage addr[LIBUS_UDP_MAX_NUM];
+    char control[LIBUS_UDP_MAX_NUM][256];
 #endif
 };
 
@@ -99,7 +102,40 @@ int bsd_recvmmsg(LIBUS_SOCKET_DESCRIPTOR fd, void *msgvec, unsigned int vlen, in
 
     return LIBUS_UDP_MAX_NUM;
 #else
+    // we need to set controllen for ip packet
+    for (int i = 0; i < vlen; i++) {
+        ((struct mmsghdr *)msgvec)[i].msg_hdr.msg_controllen = 256;
+    }
+
     return recvmmsg(fd, (struct mmsghdr *)msgvec, vlen, flags, 0);
+#endif
+}
+
+// this one is needed for knowing the destination addr of udp packet
+// an udp socket can only bind to one port, and that port never changes
+// this function returns ONLY the IP address, not any port
+int bsd_udp_packet_buffer_local_ip(void *msgvec, int index, char *ip) {
+#if defined(_WIN32) || defined(__APPLE__)
+    return 0; // not supported
+#else
+    struct msghdr *mh = &((struct mmsghdr *) msgvec)[index].msg_hdr;
+    for (struct cmsghdr *cmsg = CMSG_FIRSTHDR(mh); cmsg != NULL; cmsg = CMSG_NXTHDR(mh, cmsg)) {
+        // ipv6 or ipv4
+        if (cmsg->cmsg_level == IPPROTO_IP && cmsg->cmsg_type == IP_PKTINFO) {
+            struct in_pktinfo *pi = (struct in_pktinfo *) CMSG_DATA(cmsg);
+            memcpy(ip, &pi->ipi_addr, 4);
+            return 4;
+        }
+
+        if (cmsg->cmsg_level == IPPROTO_IPV6 && cmsg->cmsg_type == IPV6_PKTINFO) {
+            struct in6_pktinfo *pi6 = (struct in6_pktinfo *) CMSG_DATA(cmsg);
+            memcpy(ip, &pi6->ipi6_addr, 16);
+            return 16;
+        }
+    }
+
+    return 0; // no length
+
 #endif
 }
 
@@ -146,6 +182,9 @@ void bsd_udp_buffer_set_packet_payload(struct us_udp_packet_buffer_t *send_buf, 
     // copy the peer address
     memcpy(ss[index].msg_hdr.msg_name, peer_addr, /*ss[index].msg_hdr.msg_namelen*/ sizeof(struct sockaddr_in));
 
+    // set control length to 0
+    ss[index].msg_hdr.msg_controllen = 0;
+
     // copy the payload
     
     ss[index].msg_hdr.msg_iov->iov_len = length + offset;
@@ -184,8 +223,8 @@ void *bsd_create_udp_packet_buffer() {
             .msg_iov        = &b->iov[n],
             .msg_iovlen     = 1,
 
-            .msg_control    = 0,
-            .msg_controllen = 0,
+            .msg_control    = b->control[n],
+            .msg_controllen = 256,
         };
     }
 
@@ -440,6 +479,46 @@ LIBUS_SOCKET_DESCRIPTOR bsd_create_listen_socket(const char *host, int port, int
     return listenFd;
 }
 
+#ifndef _WIN32
+#include <sys/un.h>
+#else
+#include <afunix.h>
+#include <io.h>
+#endif
+#include <sys/stat.h>
+#include <stddef.h>
+LIBUS_SOCKET_DESCRIPTOR bsd_create_listen_socket_unix(const char *path, int options) {
+
+    LIBUS_SOCKET_DESCRIPTOR listenFd = LIBUS_SOCKET_ERROR;
+
+    listenFd = bsd_create_socket(AF_UNIX, SOCK_STREAM, 0);
+
+    if (listenFd == LIBUS_SOCKET_ERROR) {
+        return LIBUS_SOCKET_ERROR;
+    }
+
+#ifndef _WIN32
+    // 700 permission by default
+    fchmod(listenFd, S_IRWXU);
+#else
+    _chmod(path, S_IREAD | S_IWRITE | S_IEXEC);
+#endif
+
+    struct sockaddr_un server_address;
+    memset(&server_address, 0, sizeof(server_address));
+    server_address.sun_family = AF_UNIX;
+    strcpy(server_address.sun_path, path);
+    int size = offsetof(struct sockaddr_un, sun_path) + strlen(server_address.sun_path);
+    unlink(path);
+
+    if (bind(listenFd, (struct sockaddr *)&server_address, size) || listen(listenFd, 512)) {
+        bsd_close_socket(listenFd);
+        return LIBUS_SOCKET_ERROR;
+    }
+
+    return listenFd;
+}
+
 LIBUS_SOCKET_DESCRIPTOR bsd_create_udp_socket(const char *host, int port) {
     struct addrinfo hints, *result;
     memset(&hints, 0, sizeof(struct addrinfo));
@@ -487,6 +566,35 @@ LIBUS_SOCKET_DESCRIPTOR bsd_create_udp_socket(const char *host, int port) {
     setsockopt(listenFd, IPPROTO_IPV6, IPV6_V6ONLY, (SETSOCKOPT_PTR_TYPE) &disabled, sizeof(disabled));
 #endif
 
+    /* We need destination address for udp packets in both ipv6 and ipv4 */
+
+/* On FreeBSD this option seems to be called like so */
+#ifndef IPV6_RECVPKTINFO
+#define IPV6_RECVPKTINFO IPV6_PKTINFO
+#endif
+
+    int enabled = 1;
+    if (setsockopt(listenFd, IPPROTO_IPV6, IPV6_RECVPKTINFO, &enabled, sizeof(enabled)) == -1) {
+        if (errno == 92) {
+            if (setsockopt(listenFd, IPPROTO_IP, IP_PKTINFO, &enabled, sizeof(enabled)) != 0) {
+                printf("Error setting IPv4 pktinfo!\n");
+            }
+        } else {
+            printf("Error setting IPv6 pktinfo!\n");
+        }
+    }
+
+    /* These are used for getting the ECN */
+    if (setsockopt(listenFd, IPPROTO_IPV6, IPV6_RECVTCLASS, &enabled, sizeof(enabled)) == -1) {
+        if (errno == 92) {
+            if (setsockopt(listenFd, IPPROTO_IP, IP_RECVTOS, &enabled, sizeof(enabled)) != 0) {
+                printf("Error setting IPv4 ECN!\n");
+            }
+        } else {
+            printf("Error setting IPv6 ECN!\n");
+        }
+    }
+
     /* We bind here as well */
     if (bind(listenFd, listenAddr->ai_addr, (socklen_t) listenAddr->ai_addrlen)) {
         bsd_close_socket(listenFd);
@@ -496,6 +604,37 @@ LIBUS_SOCKET_DESCRIPTOR bsd_create_udp_socket(const char *host, int port) {
 
     freeaddrinfo(result);
     return listenFd;
+}
+
+int bsd_udp_packet_buffer_ecn(void *msgvec, int index) {
+
+#if defined(_WIN32) || defined(__APPLE__)
+    printf("ECN not supported!\n");
+#else
+    // we should iterate all control messages once, after recvmmsg and then only fetch them with these functions
+    struct msghdr *mh = &((struct mmsghdr *) msgvec)[index].msg_hdr;
+    for (struct cmsghdr *cmsg = CMSG_FIRSTHDR(mh); cmsg != NULL; cmsg = CMSG_NXTHDR(mh, cmsg)) {
+        // do we need to get TOS from ipv6 also?
+        if (cmsg->cmsg_level == IPPROTO_IP) {
+            if (cmsg->cmsg_type == IP_TOS) {
+                uint8_t tos = *(uint8_t *)CMSG_DATA(cmsg);
+                return tos & 3;
+            }
+        }
+
+        if (cmsg->cmsg_level == IPPROTO_IPV6) {
+            if (cmsg->cmsg_type == IPV6_TCLASS) {
+                // is this correct?
+                uint8_t tos = *(uint8_t *)CMSG_DATA(cmsg);
+                return tos & 3;
+            }
+        }
+    }
+#endif
+
+    printf("We got no ECN!\n");
+
+    return 0; // no ecn defaults to 0
 }
 
 LIBUS_SOCKET_DESCRIPTOR bsd_create_connect_socket(const char *host, int port, const char *source_host, int options) {
@@ -523,6 +662,8 @@ LIBUS_SOCKET_DESCRIPTOR bsd_create_connect_socket(const char *host, int port, co
             int ret = bind(fd, interface_result->ai_addr, (socklen_t) interface_result->ai_addrlen);
             freeaddrinfo(interface_result);
             if (ret == LIBUS_SOCKET_ERROR) {
+                bsd_close_socket(fd);
+                freeaddrinfo(result);
                 return LIBUS_SOCKET_ERROR;
             }
         }
@@ -530,6 +671,25 @@ LIBUS_SOCKET_DESCRIPTOR bsd_create_connect_socket(const char *host, int port, co
 
     connect(fd, result->ai_addr, (socklen_t) result->ai_addrlen);
     freeaddrinfo(result);
+
+    return fd;
+}
+
+LIBUS_SOCKET_DESCRIPTOR bsd_create_connect_socket_unix(const char *server_path, int options) {
+
+    struct sockaddr_un server_address;
+    memset(&server_address, 0, sizeof(server_address));
+    server_address.sun_family = AF_UNIX;
+    strcpy(server_address.sun_path, server_path);
+    int size = offsetof(struct sockaddr_un, sun_path) + strlen(server_address.sun_path);
+
+    LIBUS_SOCKET_DESCRIPTOR fd = bsd_create_socket(AF_UNIX, SOCK_STREAM, 0);
+
+    if (fd == LIBUS_SOCKET_ERROR) {
+        return LIBUS_SOCKET_ERROR;
+    }
+
+    connect(fd, (struct sockaddr *)&server_address, size);
 
     return fd;
 }

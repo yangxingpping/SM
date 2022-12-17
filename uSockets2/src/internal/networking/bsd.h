@@ -23,6 +23,8 @@
 // holds everything you need from the bsd/winsock interfaces, only included by internal libusockets.h
 // here everything about the syscalls are inline-wrapped and included
 
+#include "libusockets.h"
+
 #ifdef _WIN32
 #ifndef NOMINMAX
 #define NOMINMAX
@@ -58,6 +60,8 @@ int bsd_recvmmsg(LIBUS_SOCKET_DESCRIPTOR fd, void *msgvec, unsigned int vlen, in
 int bsd_udp_packet_buffer_payload_length(void *msgvec, int index);
 char *bsd_udp_packet_buffer_payload(void *msgvec, int index);
 char *bsd_udp_packet_buffer_peer(void *msgvec, int index);
+int bsd_udp_packet_buffer_local_ip(void *msgvec, int index, char *ip);
+int bsd_udp_packet_buffer_ecn(void *msgvec, int index);
 void *bsd_create_udp_packet_buffer();
 void bsd_udp_buffer_set_packet_payload(struct us_udp_packet_buffer_t *send_buf, int index, int offset, void *payload, int length, void *peer_addr);
 
@@ -92,9 +96,13 @@ int bsd_would_block();
 // listen both on ipv6 and ipv4
 LIBUS_SOCKET_DESCRIPTOR bsd_create_listen_socket(const char *host, int port, int options);
 
+LIBUS_SOCKET_DESCRIPTOR bsd_create_listen_socket_unix(const char *path, int options);
+
 /* Creates an UDP socket bound to the hostname and port */
 LIBUS_SOCKET_DESCRIPTOR bsd_create_udp_socket(const char *host, int port);
 
 LIBUS_SOCKET_DESCRIPTOR bsd_create_connect_socket(const char *host, int port, const char *source_host, int options);
+
+LIBUS_SOCKET_DESCRIPTOR bsd_create_connect_socket_unix(const char *server_path, int options);
 
 #endif // BSD_H

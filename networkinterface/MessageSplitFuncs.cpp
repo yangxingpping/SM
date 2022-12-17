@@ -48,7 +48,7 @@ bool MessageSplitFuncs::fixLenSplit(deque<uint8_t>& msg, cmdhead& head, string& 
 bool MessageSplitFuncs::FixHeaderSplit(deque<uint8_t>& msg, cmdhead& head, string& dst)
 {
     bool bret = false;
-    if(head.mainc==MainCmd::Invalid) //need parse head first
+    if(head.mainc==MainCmd::MainCmdBegin) //need parse head first
     {
         if(msg.size() < _fixHeadLen)
         {
@@ -74,7 +74,7 @@ bool MessageSplitFuncs::FixHeaderSplit(deque<uint8_t>& msg, cmdhead& head, strin
 bool MessageSplitFuncs::FixHeaderSplit2(string_view msg, cmdhead& head, string& dst)
 {
     bool bret = false;
-    if (head.mainc == MainCmd::Invalid) // need parse head first
+    if (head.mainc == MainCmd::MainCmdBegin) // need parse head first
     {
         if (msg.size() < _fixHeadLen)
         {

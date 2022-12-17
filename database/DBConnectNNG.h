@@ -27,7 +27,7 @@ class DATABASE_EXPORT DBConnectNNG
   public:
     DBConnectNNG( string ip, uint16_t port);
     ~DBConnectNNG();
-    asio::awaitable<bool> _execQuery(string& req, string& rep, AssDB op);
+    asio::awaitable<bool> _execQuery(string& req, string& rep, uint16_t op);
 
 private:
     string _ip;

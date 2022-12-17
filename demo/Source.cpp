@@ -32,6 +32,8 @@
 #include "nng/protocol/reqrep0/rep.h"
 #include "nng/supplemental/util/platform.h"
 
+#include "database.h"
+
 #ifdef OS_WIN
 #include <windows.h>
 #endif
@@ -302,16 +304,16 @@ void test_nng_asyn_asio()
 
 void test_nng_asyn_asio2()
 {
-	auto serverfunc = std::make_shared<RouterFuncType>([](std::string req, string token)->asio::awaitable<std::string>
+	auto serverfunc = std::make_shared<RouterFuncType>([](std::string req, string token)->asio::awaitable<RouterFuncReturnType>
 	{
-		std::string ret{ "hello" };
+		RouterFuncReturnType  ret = std::make_shared<string>(string{ "hello" });
 
 		co_return ret;
 	});
 
 	uint16_t portx = 888;
 
-	SMNetwork::addRouterTrans(MainCmd::Invalid, 0, serverfunc);
+	SMNetwork::addRouterTrans(MainCmd::DefaultMain, 0, serverfunc);
 
 	shared_ptr<SMNetwork::PackDealerBase> ps = shared_ptr<SMNetwork::PackDealerBase>(new SMNetwork::PackDealerNoHead(ChannelType::EchoServer));
 	shared_ptr<SMNetwork::PackDealerBase> pc = shared_ptr<SMNetwork::PackDealerBase>(new SMNetwork::PackDealerNoHead(ChannelType::EchoClient));
@@ -329,16 +331,16 @@ void test_nng_asyn_asio2()
 
 void test_nng_asyn_reqrep_asio()
 {
-	auto serverfunc = std::make_shared<RouterFuncType>([](std::string req, string token)->asio::awaitable<std::string>
+	auto serverfunc = std::make_shared<RouterFuncType>([](std::string req, string token)->asio::awaitable<RouterFuncReturnType>
 		{
-			std::string ret{ "fuck" };
+			RouterFuncReturnType  ret = std::make_shared<string>(string("fuck"));
 
 			co_return ret;
 		});
 
 	uint16_t portx = 888;
 
-	SMNetwork::addRouterTrans(MainCmd::Invalid, 0, serverfunc);
+	SMNetwork::addRouterTrans(MainCmd::DefaultMain, 0, serverfunc);
 
 	shared_ptr<SMNetwork::PackDealerBase> ps = shared_ptr<SMNetwork::PackDealerBase>(new SMNetwork::PackDealerNoHead(ChannelType::EchoServer));
 	shared_ptr<SMNetwork::PackDealerBase> pc = shared_ptr<SMNetwork::PackDealerBase>(new SMNetwork::PackDealerNoHead(ChannelType::EchoClient));
@@ -396,16 +398,24 @@ void test_async_stream_file()
 	assert(result == 0);
 }
 
+void test_zoned_time()
+{
+	date::zoned_time t2{ SMDB::getDefaultTimeZone(), std::chrono::system_clock::now() };
+	auto vv2 = sqlpp::chrono::day_point(sqlpp::chrono::floor<sqlpp::chrono::days>(t2.get_local_time().time_since_epoch()));
+}
+
 int main(int argc, char* argv[])
 {
 	bool biorun = true;
 	test_pack();
-	SMDB::init();
+	//SMDB::init(true);
 	test_encode_decode();
 	test_sha256();
 	test_nng_xreqrep();
 
 	SMHotupdate::IOContextManager::Init();
+
+	//test_zoned_time();
 
 	std::istringstream ss{ "2022-06-22" };
 	date::sys_days tp;

@@ -27,7 +27,7 @@ DBConnectTCP::~DBConnectTCP() {
 }
 
 
-asio::awaitable<bool> DBConnectTCP::_execQuery(string& req, string& rep, AssDB op)
+asio::awaitable<bool> DBConnectTCP::_execQuery(string& req, string& rep, uint16_t op)
 {
     bool succ = false;
     uint8_t trycount = 0;
@@ -41,7 +41,8 @@ asio::awaitable<bool> DBConnectTCP::_execQuery(string& req, string& rep, AssDB o
             co_return succ;
         }
         shared_ptr<SMNetwork::PackDealerBase> dealer = std::shared_ptr<SMNetwork::PackDealerBase>(new SMNetwork::PackDealerMainSub(MainCmd::DBQuery, ChannelType::DBClient));
-        auto ret2 = co_await ret->clientEntry(dealer, req, op);
+        dealer->setAssc(op);
+        auto ret2 = co_await ret->clientEntry(dealer, req);
         succ = !ret2->empty();
         rep.insert(rep.end(), ret2->begin(), ret2->end());
 

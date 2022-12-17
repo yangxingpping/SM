@@ -45,10 +45,11 @@ namespace SMDB
 		static DBConnectManager& getInst2();
 
 		template <class Req, class Rep>
-		asio::awaitable<bool> executeQueryTCP(Req req, Rep& rep, AssDB op)
+		asio::awaitable<bool> executeQueryTCP(Req req, Rep& rep, uint16_t op)
 		{
 			bool bret = false;
-			string strreq = my_to_string(req);
+			RouterFuncReturnType strreq = my_to_string(req);
+			string packedreq = SMUtils::packstring(*strreq);
 			string strrep;
 
 			shared_ptr<DBConnectTCP> ret;
@@ -57,30 +58,35 @@ namespace SMDB
 				ret = make_shared<DBConnectTCP>(_ip, _port);
 			}
 			BEGIN_ASIO;
-			bret = co_await ret->_execQuery(strreq, strrep, op);
+			bret = co_await ret->_execQuery(packedreq, strrep, op);
 			END_ASIO;
 			if (bret)
 			{
 				_connsTcp.enqueue(ret);
+				bret = my_json_parse_from_string(rep, strrep);
+				if(bret)
+				{
+					co_return bret;
+				}
+				else
+				{
+					SPDLOG_WARN("tcp database query req {}, rep {} parse rep failed", *strreq, strrep);
+				}
 			}
-
-			bret = my_json_parse_from_string(rep, strrep);
-			if (!bret)
+			else
 			{
-				SPDLOG_WARN("database operate {} str {} return {} parse failed ", magic_enum::enum_name(op), strreq, strrep);
+				SPDLOG_WARN("execute query req {} failed", *strreq);
 			}
 			co_return bret;
 		}
 
 		template <class Req, class Rep>
-		asio::awaitable<bool> executeQueryNNG(Req req, Rep& rep, AssDB op)
+		asio::awaitable<bool> executeQueryNNG(Req req, Rep& rep, uint16_t op)
 		{
 			bool bret = false;
-			iguana::string_stream ss;
-			iguana::json::to_json(ss, req);
-			string strreq = ss.str();
+			RouterFuncReturnType strreq = my_to_string(req);
 			string strrep;
-			SPDLOG_INFO("send db query req {} query type {}", strreq, magic_enum::enum_name(op));
+			SPDLOG_INFO("send db query req {} query type {}", *strreq, SMUtils::getOpDBNameByValue(op));
 			auto addrinfo = CONFINST.getDBConfig()._nngClient;
 
 			shared_ptr<DBConnectNNG> ret;
@@ -90,7 +96,7 @@ namespace SMDB
 				ret = make_shared<DBConnectNNG>(addrinfo._ip, addrinfo._port);
 				END_ASIO;
 			}
-			bret = co_await ret->_execQuery(strreq, strrep, op);
+			bret = co_await ret->_execQuery(*strreq, strrep, op);
 			if (bret)
 			{
 				_connsNNG.enqueue(ret);
@@ -100,13 +106,13 @@ namespace SMDB
 			bret = my_json_parse_from_string(rep, strrep);
 			if (!bret)
 			{
-				SPDLOG_WARN("database operate {} str {} return {} parse failed ", magic_enum::enum_name(op), strreq, strrep);
+				SPDLOG_WARN("nng database operate {} str {} return {} parse failed ", SMUtils::getOpDBNameByValue(op), *strreq, strrep);
 			}
 			co_return bret;
 		}
 
 		template <class Req, class Rep>
-		asio::awaitable<bool> executeQuery(Req req, Rep& rep, AssDB op, DBMethod method = DBMethod::TCP)
+		asio::awaitable<bool> executeQuery(Req req, Rep& rep, uint16_t op, DBMethod method = DBMethod::TCP)
 		{
 			bool bret = false;
 			BEGIN_ASIO;
@@ -127,7 +133,8 @@ namespace SMDB
 			}
 			if (!bret)
 			{
-				SPDLOG_WARN("database operate {} return false ", magic_enum::enum_name(op));
+				rep.code = magic_enum::enum_integer(statusCode::sendDBQueryExecFailed);
+				SPDLOG_WARN("database operate {} return false ", SMUtils::getOpDBNameByValue(op));
 			}
 			END_ASIO;
 			co_return bret;

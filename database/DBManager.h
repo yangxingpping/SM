@@ -3,12 +3,12 @@
 /**
  * @file DBManager.h class declare for connections to database instance(postgresql, sqlite, mysql...)
  * @author your name (you@domain.com)
- * @brief 
+ * @brief
  * @version 0.1
  * @date 2022-01-04
- * 
+ *
  * @copyright Copyright (c) 2022
- * 
+ *
  */
 #include "databaseExport.h"
 #include "Configs.h"
@@ -37,16 +37,13 @@ using std::list;
 using std::mutex;
 
 #ifdef USE_SQLITE
-namespace sqlite = sqlpp::sqlite3;
+namespace sqlconn = sqlpp::sqlite3;
 #else
-namespace pg = sqlpp::postgresql;
+namespace sqlconn = sqlpp::postgresql;
 #endif
 
-#ifdef USE_SQLITE
-    #define DBConnectType sqlite::connection
-#else
-    #define DBConnectType pg::connection
-#endif
+#define DBConnectType sqlconn::connection
+
 
 #define RediscConnectType cpp_redis::client
 
@@ -58,68 +55,61 @@ namespace pg = sqlpp::postgresql;
 namespace SMDB
 {
 
-class DBInst;
+	class DBInst;
 
-class DATABASE_EXPORT DBManager
-{
-  public:
-    static shared_ptr<DBManager> _dbmgr;
-    static void SDBMgrInit(const DatabaseConfig& conf);
-    static shared_ptr<DBManager>  SDBMgrInit2();
-    friend DBInst;
-public:
-    #ifdef USE_SQLITE
-    DBManager(string file, bool debug); //for local sqlite3
-    #else
-    DBManager(size_t concurrent, string db, string host, string user, string pass,
-      bool debug); // for local postgresql
-    #endif
-    void setConfig(const DatabaseConfig& conf);
-    DBConnectType* GetConn();
-    RediscConnectType* GetRedisConn();
-    void addConnect(DBConnectType* conn);
-    void addRedisConnect(RediscConnectType* conn);
-  protected:
-      #ifdef USE_SQLITE
-    sqlite::connection* _addConnect();
-    #else
-    pg::connection* _addConnect();
-    #endif
-    RediscConnectType* _addRedisConnect();
-
-  private:
+	class DATABASE_EXPORT DBManager
+	{
+	public:
+		static shared_ptr<DBManager> _dbmgr;
+		static void SDBMgrInit(const DatabaseConfig& conf);
+		static shared_ptr<DBManager>  SDBMgrInit2();
+		friend DBInst;
+	public:
 #ifdef USE_SQLITE
-    std::shared_ptr<sqlite::connection_config> _confsqlite = nullptr;
-    #else
-    std::shared_ptr<pg::connection_config> _confpg = nullptr;
-    #endif
-    
-    DatabaseConfig _conf;
-    moodycamel::ConcurrentQueue<DBConnectType*> _conns;
+		DBManager(string file, bool debug); //for local sqlite3
+#else
+		DBManager(size_t concurrent, string db, string host, string user, string pass,
+			bool debug); // for local postgresql
+#endif
+		void setConfig(const DatabaseConfig& conf);
+		string serializeConf();
+		DBConnectType* GetConn();
+		RediscConnectType* GetRedisConn();
+		void addConnect(DBConnectType* conn);
+		void addRedisConnect(RediscConnectType* conn);
+	protected:
+		sqlconn::connection* _addConnect();
+		RediscConnectType* _addRedisConnect();
 
-    moodycamel::ConcurrentQueue<cpp_redis::client*> _redis;
-};
+	private:
+		std::shared_ptr<sqlconn::connection_config> _connconf = nullptr;
+		DatabaseConfig _conf;
+		moodycamel::ConcurrentQueue<DBConnectType*> _conns;
 
-class DATABASE_EXPORT DBInst
-{
-public:
-    DBInst();
-    DBConnectType& operator*();
-    DBConnectType* get();
-    ~DBInst();
-private:
-    DBConnectType*     _conn = nullptr;
-};
+		moodycamel::ConcurrentQueue<cpp_redis::client*> _redis;
+	};
 
-class DATABASE_EXPORT RDBInst
-{
-public:
-    RDBInst();
-    RediscConnectType& operator*();
-    
-    ~RDBInst();
-private:
-    RediscConnectType*     _conn = nullptr;
-};
+	class DATABASE_EXPORT DBInst
+	{
+	public:
+		DBInst();
+		DBConnectType& operator*();
+		DBConnectType* get();
+		DBConnectType& ref();
+		~DBInst();
+	private:
+		DBConnectType* _conn = nullptr;
+	};
+
+	class DATABASE_EXPORT RDBInst
+	{
+	public:
+		RDBInst();
+		RediscConnectType& operator*();
+
+		~RDBInst();
+	private:
+		RediscConnectType* _conn = nullptr;
+	};
 
 }

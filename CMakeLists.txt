@@ -29,6 +29,8 @@ find_package(asio CONFIG REQUIRED)
 find_package(Catch2 CONFIG REQUIRED)
 find_package(nngpp CONFIG REQUIRED)
 find_package(date CONFIG REQUIRED)
+find_package(Sqlpp11 CONFIG REQUIRED)
+find_package(unofficial-sqlite3 CONFIG REQUIRED)
 
 
 add_definitions(-DUSE_SQLITE -DASIO_HAS_FILE -DNOMINMAX -DSPDLOG_COMPILED_LIB)
@@ -73,6 +75,7 @@ add_subdirectory(hashlibrary)
 if(PROJECT_IS_TOP_LEVEL)
     add_subdirectory(demo)
     add_subdirectory(tests)
-  endif()
+endif()
 
+enable_testing()
 

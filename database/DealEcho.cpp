@@ -13,13 +13,6 @@ namespace SMDB
 
 	}
 
-	bool DealEcho::Echo(EchoReq& req)
-	{
-		bool bret = false;
-		bret = SMUtils::isjwttokenright(string_view{ req.token });
-		return bret;
-	}
-
 	EchoRep DealEcho::lEcho(EchoReq& req)
 	{
 		EchoRep rep;
@@ -27,9 +20,7 @@ namespace SMDB
 		return rep;
 	}
 
-	PackType DealEcho::getPackType() {
-		return _packtype;
-	}
+	
 
 	void DealEcho::init(ServeMode mode) { }
 }

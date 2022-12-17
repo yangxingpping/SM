@@ -6,8 +6,9 @@
 #include <fstream>
 #include <filesystem>
 
-#include "asio/signal_set.hpp"
 
+
+#include "asio/signal_set.hpp"
 #include "IOContextManager.h"
 #include "fmt/format.h"
 #include "asio/co_spawn.hpp"
@@ -15,35 +16,35 @@
 #include "asio/ip/tcp.hpp"
 #include "asio/redirect_error.hpp"
 #include "asio/use_awaitable.hpp"
-#include "FileOp.h"
 #include "HttpCmdTag.h"
 #include "TransCmdTag.h"
+#include "FileOp.h"
 #include "catch.hpp"
 
 using Catch::Matchers::Equals;
 
 using namespace std;
 
-class httpcmd1 : public HttpCmdTag<httpcmd1>
+class httpcmd1 : public HttpCmdTag<httpcmd1, MainCmd>
 {
 public:
 	httpcmd1()
 	{
 
 	}
-	BEGIN_ROUTER_MAP(MainCmd::Invalid);
+	BEGIN_ROUTER_MAP(MainCmd::DefaultMain);
 	END_ROUTER_MAP;
 };
 
-class transcmd1 : public TransCmdTag<transcmd1>
+class transcmd1 : public TransCmdTag<transcmd1, MainCmd>
 {
 public:
 	transcmd1()
 	{
 		std::cout << "transcmd1 create..." << std::endl;
 	}
-	BEGIN_ROUTER_MAP_TRANS(MainCmd::Invalid);
-	END_ROUTER_MAP_TRANS;
+	BEGIN_ROUTER_MAP_DB(MainCmd::DefaultMain);
+	END_ROUTER_MAP_DB;
 };
 
 int main(int argc, char* argv[]) 

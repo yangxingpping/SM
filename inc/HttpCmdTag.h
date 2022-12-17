@@ -1,3 +1,13 @@
+/**
+ * @file HttpCmdTag.h
+ * @author alqaz (you@domain.com)
+ * @brief macros define for gateway routers
+ * @version 0.1
+ * @date 2022-11-08
+ * 
+ * @copyright Copyright (c) 2022
+ * 
+ */
 
 #pragma once
 #include "templatefuncs.h"
@@ -35,17 +45,17 @@ using std::map;
     SMHotupdate::AddDependIOCTXInitFunc(vv);\
    }
 
-//template<class ParamterType, class ReturnType, enum AssDB assDB>
-//shared_ptr<RouterFuncType> 
+
+
 
 /**
- * only need send query to database instance, request parameter and response parameter need not modify
+ * only need send query to database instance, request parameter and response parameter not need modify
  */
-#define ADD_ROUTER_ONLY_NEED_DB_JSON(ParamterType, ReturnType, AssTypeVar, AssDBTypeVar) {\
-    auto lambdax = make_shared<RouterFuncType>([](string msg, string token) -> asio::awaitable<string> {\
+#define ROUTER_NEED_DB_JSON(ParamterType, ReturnType, AssTypeVar, AssDBTypeVar) {\
+    auto lambdax = make_shared<RouterFuncType>([](string& msg, string token) -> asio::awaitable<RouterFuncReturnType> {\
             ParamterType req;\
             ReturnType ret;\
-            string strret;\
+            RouterFuncReturnType strret;\
             if (!my_json_parse_from_string(req, msg)) \
             {\
                 ret.code = to_underlying(statusCode::invalidJson);\
@@ -57,55 +67,21 @@ using std::map;
                 {\
                     req.token = token; \
                 }\
-				if (!co_await DBCMGRREF.executeQuery(req, ret, AssDBTypeVar))\
-				{\
-					SPDLOG_WARN("execute db query failed"); \
-				}\
+				co_await DBCMGRREF.executeQuery(req, ret, magic_enum::enum_integer(AssDBTypeVar));\
             }\
             strret = my_to_string(ret);\
-            SPDLOG_INFO("execute query {} get response {}", msg, strret);\
-            co_return strret;\
-        });\
-        SMNetwork::addRouterJson(SMNetwork::combinePath(_mainc, AssTypeVar), lambdax); }
-
- /**
-  * parameter send to database instance need call func to convert  DBParamterType
-  */
-#define ADD_ROUTER_MODIFY_QUERY_REQ_NEED_DB_JSON(func, ParamterType, DBParamterType, ReturnType, AssTypeVar, AssDBTypeVar) {\
-    auto lambdax = make_shared<RouterFuncType>([](string msg, string token) -> asio::awaitable<string> {\
-            ParamterType req;\
-            ReturnType ret;\
-            if (!my_json_parse_from_string(req, msg)) \
-            {\
-              ret.code = to_underlying(statusCode::invalidJson);\
-            }\
-            else\
-            {\
-                if(!token.empty())\
-                {\
-                    req.token = token;\
-                }\
-                auto vv = std::bind(func, &_inst2, std::placeholders::_1);\
-                DBParamterType dbreq = vv(req);\
-			    if (!co_await DBCMGRREF.executeQuery(dbreq, ret, AssDBTypeVar))\
-			    {\
-				    SPDLOG_WARN("execute db query failed");\
-			    }\
-            }\
-            strret = my_to_string(ret);\
-            SPDLOG_INFO("execute query {} get response {}", msg, strret);\
             co_return strret;\
         });\
         SMNetwork::addRouterJson(SMNetwork::combinePath(_mainc, AssTypeVar), lambdax); }
 
   /**
-   * need use func to check whether this request need send database query to database instance
+   * router send req to local cache, if cache hit, return rep; else, send req to db proxy, then return rep
    */
-#define ADD_ROUTER_DYNAMIC_NEED_DB_JSON(needQuery, localQuery, ParamterType, ReturnType, AssTypeVar, AssDBTypeVar) {\
-    auto lambdax = make_shared<RouterFuncType>([](string msg, string token) -> asio::awaitable<string> {\
+#define ROUTER_NEED_CACHE_DB_JSON(localQuery, ParamterType, ReturnType, AssTypeVar, AssDBTypeVar) {\
+    auto lambdax = make_shared<RouterFuncType>([](string& msg, string token) -> asio::awaitable<RouterFuncReturnType> {\
             ParamterType req;\
             ReturnType ret;\
-            string strret;\
+            RouterFuncReturnType strret;\
             if (!my_json_parse_from_string(req, msg)) \
             {\
                 ret.code = to_underlying(statusCode::invalidJson);\
@@ -116,407 +92,99 @@ using std::map;
                 {\
                     req.token = token;\
                 }\
-                auto vv = std::bind(needQuery, &_inst2, std::placeholders::_1);\
-                if (vv(req))\
+                bool bret = std::invoke(localQuery, &_inst2, req, ret);\
+                if(bret)\
                 {\
-				    if (!co_await DBCMGRREF.executeQuery(req, ret, AssDBTypeVar))\
-				    {\
-					    SPDLOG_WARN("execute db query failed");\
-				    }\
-                }\
-                else\
-                {\
-                    ret = std::invoke(localQuery, &_inst2, req);\
-                }\
-            }\
-            strret = my_to_string(ret);\
-            SPDLOG_INFO("execute query {} get response {}", msg, strret);\
-            co_return strret;\
-        });\
-        SMNetwork::addRouterJson(SMNetwork::combinePath(_mainc, AssTypeVar), lambdax); }
-
-#define ADD_ROUTER_DBREQ_JSON(func, ParamterType, DBParamterType, ReturnType, AssTypeVar, AssDBTypeVar) {\
-    auto lambdax = make_shared<RouterFuncType>([](string msg, string token) -> asio::awaitable<string> {\
-            ParamterType req;\
-            ReturnType ret;\
-            string strret;\
-            if (!my_json_parse_from_string(req, msg)) \
-            {\
-                ret.code = to_underlying(statusCode::invalidJson);\
-            }\
-            else\
-            {\
-                if(!token.empty())\
-                {\
-                    req.token = token;\
-                }\
-                auto vv = std::bind(func, &_inst2, std::placeholders::_1);\
-                ReturnType ret;\
-                auto dbreq = vv(req);\
-                {\
-				    if (!co_await DBCMGRREF.executeQuery(dbreq, ret, AssDBTypeVar))\
-				    {\
-					    SPDLOG_WARN("execute db query failed");\
-				    }\
+					co_await DBCMGRREF.executeQuery(req, ret, magic_enum::enum_integer(AssDBTypeVar));\
                 }\
             }\
             strret = my_to_string(ret);\
             co_return strret;\
         });\
         SMNetwork::addRouterJson(SMNetwork::combinePath(_mainc, AssTypeVar), lambdax); }
-
-#define ADD_ROUTER_POST_JSON(func, funcpost, ParamterType, ReturnType, AssTypeVar, AssDBTypeVar) {\
-    auto lambdax = make_shared<RouterFuncType>([](string msg, string token) -> asio::awaitable<string> {\
-            ParamterType req;\
-            ReturnType ret;\
-            string strret;\
-            if (!my_json_parse_from_string(req, msg)) \
-            {\
-                ret.code = to_underlying(statusCode::invalidJson);\
-            }\
-            else\
-            {\
-                if(!token.empty())\
-                {\
-                    req.token = token;\
-                }\
-                auto vv = std::bind(func, &_inst2, std::placeholders::_1);\
-                ReturnType ret;\
-                if (vv(req))\
-                {\
-				    if (!co_await DBCMGRREF.executeQuery(req, ret, AssDBTypeVar))\
-				    {\
-					    SPDLOG_WARN("execute db query failed");\
-				    }\
-                }\
-                auto vvpost = std::bind(funcpost, &_inst2, std::placeholders::_1);\
-                vvpost(ret);\
-            }\
-            strret = my_to_string(ret);\
-            co_return strret;\
-        });\
-        SMNetwork::addRouterJson(SMNetwork::combinePath(_mainc, AssTypeVar), lambdax); }
-
-#define ADD_ROUTER_DBREQ_POST_JSON(func, funcpost, ParamterType, DBParamterType, ReturnType, AssTypeVar, AssDBTypeVar) {\
-    auto lambdax = make_shared<RouterFuncType>([](string msg, string token) -> asio::awaitable<string> {\
-            ParamterType req;\
-            ReturnType ret;\
-            string strret;\
-            if (!my_json_parse_from_string(req, msg)) \
-            {\
-                ret.code = to_underlying(statusCode::invalidJson);\
-            }\
-            else\
-            {\
-                if(!token.empty())\
-                {\
-                    req.token = token;\
-                }\
-                auto vv = std::bind(func, &_inst2, std::placeholders::_1);\
-                ReturnType ret;\
-                auto dbreq = vv(req);\
-                {\
-				    if (!co_await DBCMGRREF.executeQuery(dbreq, ret, AssDBTypeVar))\
-				    {\
-					    SPDLOG_WARN("execute db query failed");\
-				    }\
-                }\
-                auto vvpost = std::bind(funcpost, &_inst2, std::placeholders::_1);\
-                vvpost(ret);\
-            }\
-            strret = my_to_string(ret);\
-            co_return strret;\
-        });\
-        SMNetwork::addRouterJson(SMNetwork::combinePath(_mainc, AssTypeVar), lambdax); }
-
-#define ADD_ROUTER2_JSON(func, ParamterType, DBParamterType, ReturnType, AssTypeVar, AssDBTypeVar) {\
-    auto lambdax = make_shared<RouterFuncType>([](string msg, string token) -> asio::awaitable<string> {\
-            ParamterType req;\
-            ReturnType ret;\
-            string strret;\
-            if (!my_json_parse_from_string(req, msg)) \
-            {\
-                ret.code = to_underlying(statusCode::invalidJson);\
-            }\
-            else\
-            {\
-                if(!token.empty())\
-                {\
-                    req.token = token;\
-                }\
-                auto vv = std::bind(func, &_inst2, std::placeholders::_1);\
-                ReturnType ret;\
-                auto dbreq = vv(req);\
-                {\
-				    if (!co_await DBCMGRREF.executeQuery(dbreq, ret, AssDBTypeVar))\
-				    {\
-					    SPDLOG_WARN("execute db query failed");\
-				    }\
-                }\
-            }\
-            strret = my_to_string(ret);\
-            co_return strret;\
-        });\
-        SMNetwork::addRouterJson(SMNetwork::combinePath(_mainc, AssTypeVar), lambdax); }
-
-#define ADD_ROUTER_RETURN_STR_JSON(func, AssTypeVar) {\
-    auto lambdax = make_shared<RouterFuncType>([](string msg) -> asio::awaitable<string> {\
-            auto vv = std::bind(func, &_inst2,  std::placeholders::_1);\
-            string strret = co_await vv(msg);\
-            co_return strret;\
-        });\
-        SMNetwork::addRouterJson(SMNetwork::combinePath(_mainc, AssTypeVar), lambdax); }
-
-#define ADD_ROUTER_DB_JSON(func, ParamterType, ReturnType, AssTypeVar) {\
-    auto lambdax = make_shared<RouterFuncType>([](string msg, string token) -> asio::awaitable<string> {\
-            ParamterType req;\
-            ReturnType ret;\
-            string strret;\
-            if (!my_json_parse_from_string(req, msg)) \
-            {\
-                ret.code = to_underlying(statusCode::invalidJson);\
-            }\
-            else\
-            {\
-                if(!token.empty())\
-                {\
-                    req.token = token;\
-                }\
-                bool bret = SMDB::beforeQuery();\
-                if(!bret) \
-                {\
-                    jwtCheckFailedJSONRep invalidrep;\
-                    co_return my_to_string(invalidrep);\
-                }\
-			    auto vv = std::bind(func, &_inst2, std::placeholders::_1); \
-			    ret = co_await vv(req); \
-			    SMDB::afterQuery(); \
-            }\
-            co_return my_to_string(ret);\
-        });\
-        SMNetwork::addRouterJson(SMNetwork::combinePath(_mainc, AssTypeVar), lambdax); }
-
 
    /**
-	* only need send query to database instance, request parameter and response paramter need not modify
-	*/
-#define ADD_ROUTER_ONLY_NEED_DB_HTML(ParamterType, ReturnType, AssTypeVar, AssDBTypeVar) {\
-    auto lambdax = make_shared<RouterFuncType>([](string msg) -> asio::awaitable<string> {\
+      * router send req to local cache and direct return rep
+      */
+#define ROUTER_NEED_CACHE_JSON(localQuery, ParamterType, ReturnType, AssTypeVar, AssDBTypeVar) {\
+    auto lambdax = make_shared<RouterFuncType>([](string& msg, string token) -> asio::awaitable<RouterFuncReturnType> {\
             ParamterType req;\
             ReturnType ret;\
-            string strret;\
+            RouterFuncReturnType strret;\
             if (!my_json_parse_from_string(req, msg)) \
             {\
                 ret.code = to_underlying(statusCode::invalidJson);\
             }\
             else\
             {\
-			    if (!co_await DBCMGRREF.executeQuery(req, ret, AssDBTypeVar))\
-			    {\
-				    SPDLOG_WARN("execute db query failed");\
-			    }\
-            }\
-            strret = my_to_string(ret);\
-            SPDLOG_INFO("execute query {} get response {}", msg, strret);\
-            co_return strret;\
-        });\
-        SMNetwork::addRouterHtml(SMNetwork::combinePath(_mainc, AssTypeVar), lambdax); }
-
-
-	/**
-	 * only need jwt check and then send query to database instance, request parameter and response paramter need not modify
-	 */
-#define ADD_ROUTER_ONLY_NEED_JWT_AND_DB_HTML(ParamterType, ReturnType, AssTypeVar, AssDBTypeVar) {\
-    auto lambdax = make_shared<RouterFuncType>([](string msg) -> asio::awaitable<string> {\
-            ParamterType req;\
-            ReturnType ret;\
-            string strret;\
-            if (!my_json_parse_from_string(req, msg)) \
-            {\
-                ret.code = to_underlying(statusCode::invalidJson);\
-            }\
-            else\
-            {\
-                if(!SMUtils::isjwttokenright(string_view{req.token}))\
+                if(!token.empty())\
                 {\
-                    jwtCheckFailedJSONRep defaultrep;\
-                    SPDLOG_WARN("jwt check failed {}", msg);\
-                    co_return my_to_string(defaultrep);\
+                    req.token = token;\
                 }\
-                ReturnType ret;\
-			    if (!co_await DBCMGRREF.executeQuery(req, ret, AssDBTypeVar))\
-			    {\
-				    SPDLOG_WARN("execute db query failed");\
-			    }\
+                ret = std::invoke(localQuery, &_inst2, req);\
             }\
             strret = my_to_string(ret);\
-            SPDLOG_INFO("execute query {} get response {}", msg, strret);\
+            SPDLOG_INFO("execute query {} get response {}", msg, *strret);\
             co_return strret;\
         });\
-        SMNetwork::addRouterHtml(SMNetwork::combinePath(_mainc, AssTypeVar), lambdax); }
+        SMNetwork::addRouterJson(SMNetwork::combinePath(_mainc, AssTypeVar), lambdax); }
 
-	 /**
-	  * parameter send to database instance need call func to convert  DBParamterType
-	  */
-#define ADD_ROUTER_MODIFY_QUERY_REQ_NEED_DB_HTML(func, ParamterType, DBParamterType, ReturnType, AssTypeVar, AssDBTypeVar) {\
-    auto lambdax = make_shared<RouterFuncType>([](string msg) -> asio::awaitable<string> {\
+/**
+ * @brief router uniform db request, send db request to db proxy, return rep
+ * 
+ */
+#define ROUTER_NEED_DBREQ_DB_JSON(func, ParamterType, DBParamterType, ReturnType, AssTypeVar, AssDBTypeVar) {\
+    auto lambdax = make_shared<RouterFuncType>([](string& msg, string token) -> asio::awaitable<RouterFuncReturnType> {\
             ParamterType req;\
             ReturnType ret;\
-            string strret;\
+            RouterFuncReturnType strret;\
             if (!my_json_parse_from_string(req, msg)) \
             {\
                 ret.code = to_underlying(statusCode::invalidJson);\
             }\
             else\
             {\
-                auto vv = std::bind(func, &_inst2, std::placeholders::_1);\
-                ReturnType ret;\
-                DBParamterType dbreq = vv(req);\
-			    if (!co_await DBCMGRREF.executeQuery(dbreq, ret, AssDBTypeVar))\
-			    {\
-				    SPDLOG_WARN("execute db query failed");\
-			    }\
-            }\
-            strret = my_to_string(ret);\
-            SPDLOG_INFO("execute query {} get response {}", msg, strret);\
-            co_return strret;\
-        });\
-        SMNetwork::addRouterHtml(SMNetwork::combinePath(_mainc, AssTypeVar), lambdax); }
-
-	  /**
-	   * need database req and database rep and need convert from req to database req and from database rep to rep
-	   */
-#define ADD_ROUTER_MODIFY_QUERY_REQ_REP_NEED_DB_HTML(reqconv, repconv, ParamterType, ReturnType, DBReqType, DBRepType, AssTypeVar, AssDBTypeVar) {\
-    auto lambdax = make_shared<RouterFuncType>([](string msg) -> asio::awaitable<string> {\
-            ParamterType req;\
-            DBRepType dbrep;\
-            ReturnType ret;\
-            string strret;\
-            if (!my_json_parse_from_string(req, msg)) \
-            {\
-                ret.code = to_underlying(statusCode::invalidJson);\
-            }\
-            else\
-            {\
-                auto vv = std::bind(reqconv, &_inst2, std::placeholders::_1);\
-                ReturnType ret;\
-                DBReqType dbreq = vv(req);\
-			    if (!co_await DBCMGRREF.executeQuery(dbreq, dbrep, AssDBTypeVar))\
-			    {\
-				    SPDLOG_WARN("execute db query failed");\
-			    }\
-                auto vv2 = std::bind(repconv, &_inst2, std::placeholders::_1);\
-                ret = vv2(dbrep);\
-            }\
-            strret = my_to_string(ret);\
-            SPDLOG_INFO("execute query {} get response {}", msg, strret);\
-            co_return strret;\
-        });\
-        SMNetwork::addRouterHtml(SMNetwork::combinePath(_mainc, AssTypeVar), lambdax); }
-
-
-	   /**
-		* no need send database query to database instance, only need call func and send return value back
-		*/
-#define ADD_ROUTER_NO_NEED_DB_HTML(func, ParamterType, ReturnType) {\
-    auto lambdax = make_shared<RouterFuncType>([](string msg) -> asio::awaitable<string> {\
-            ParamterType req;\
-            ReturnType ret;\
-            string strret;\
-            if (!my_json_parse_from_string(req, msg)) \
-            {\
-                ret.code = to_underlying(statusCode::invalidJson);\
-            }\
-            else\
-            {\
-                auto vv = std::bind(func, &_inst2, std::placeholders::_1);\
-                ReturnType ret = vv(req);\
-            }\
-            strret = my_to_string(ret);\
-            SPDLOG_INFO("deal req {} from local get rep {}", msg, strret);\
-            co_return strret;\
-        });\
-        SMNetwork::addRouterHtml(SMNetwork::combinePath(_mainc, AssTypeVar), lambdax); }
-
-		/**
-		 * need use func to check whether this request need send database query to database instance
-		 */
-#define ADD_ROUTER_DYNAMIC_NEED_DB_HTML(needQuery, localQuery, ParamterType, ReturnType, AssTypeVar, AssDBTypeVar) {\
-    auto lambdax = make_shared<RouterFuncType>([](string msg) -> asio::awaitable<string> {\
-            ParamterType req;\
-            ReturnType ret;\
-            string strret;\
-            if (!my_json_parse_from_string(req, msg)) \
-            {\
-                ret.code = to_underlying(statusCode::invalidJson);\
-            }\
-            else\
-            {\
-                auto vv = std::bind(needQuery, &_inst2, std::placeholders::_1);\
-                ReturnType ret;\
-                if (vv(req))\
+                if(!token.empty())\
                 {\
-				    if (!co_await DBCMGRREF.executeQuery(req, ret, AssDBTypeVar))\
-				    {\
-					    SPDLOG_WARN("execute db query failed");\
-				    }\
+                    req.token = token;\
                 }\
-                else\
-                {\
-                    ret = std::invoke(localQuery, &_inst2, req);\
-                }\
-            }\
-            strret = my_to_string(ret);\
-            SPDLOG_INFO("execute query {} get response {}", msg, strret);\
-            co_return strret;\
-        });\
-        SMNetwork::addRouterHtml(SMNetwork::combinePath(_mainc, AssTypeVar), lambdax); }
-
-#define ADD_ROUTER_DBREQ_HTML(func, ParamterType, DBParamterType, ReturnType, AssTypeVar, AssDBTypeVar) {\
-    auto lambdax = make_shared<RouterFuncType>([](string msg) -> asio::awaitable<string> {\
-            ParamterType req;\
-            ReturnType ret;\
-            string strret;\
-            if (!my_json_parse_from_string(req, msg)) \
-            {\
-                ret.code = to_underlying(statusCode::invalidJson);\
-            }\
-            else\
-            {\
                 auto vv = std::bind(func, &_inst2, std::placeholders::_1);\
                 ReturnType ret;\
                 auto dbreq = vv(req);\
                 {\
-				    if (!co_await DBCMGRREF.executeQuery(dbreq, ret, AssDBTypeVar))\
-				    {\
-					    SPDLOG_WARN("execute db query failed");\
-				    }\
+				    co_await DBCMGRREF.executeQuery(dbreq, ret, magic_enum::enum_integer(AssDBTypeVar));\
                 }\
             }\
             strret = my_to_string(ret);\
             co_return strret;\
         });\
-        SMNetwork::addRouterHtml(SMNetwork::combinePath(_mainc, AssTypeVar), lambdax); }
+        SMNetwork::addRouterJson(SMNetwork::combinePath(_mainc, AssTypeVar), lambdax); }
 
-#define ADD_ROUTER_POST_HTML(func, funcpost, ParamterType, ReturnType, AssTypeVar, AssDBTypeVar) {\
-    auto lambdax = make_shared<RouterFuncType>([](string msg) -> asio::awaitable<string> {\
+
+/**
+ * @brief router unifrom db request , send db request to database proxy, convert db rep, return rep
+ * 
+ */
+#define ROUTER_NEED_DBREQ_DB_DBREP_JSON(func, funcpost, ParamterType, DBParamterType, ReturnType, AssTypeVar, AssDBTypeVar) {\
+    auto lambdax = make_shared<RouterFuncType>([](string& msg, string token) -> asio::awaitable<RouterFuncReturnType> {\
             ParamterType req;\
             ReturnType ret;\
-            string strret;\
+            RouterFuncReturnType strret;\
             if (!my_json_parse_from_string(req, msg)) \
             {\
                 ret.code = to_underlying(statusCode::invalidJson);\
             }\
             else\
             {\
+                if(!token.empty())\
+                {\
+                    req.token = token;\
+                }\
                 auto vv = std::bind(func, &_inst2, std::placeholders::_1);\
                 ReturnType ret;\
-                if (vv(req))\
+                auto dbreq = vv(req);\
                 {\
-				    if (!co_await DBCMGRREF.executeQuery(req, ret, AssDBTypeVar))\
-				    {\
-					    SPDLOG_WARN("execute db query failed");\
-				    }\
+				    co_await DBCMGRREF.executeQuery(dbreq, ret, magic_enum::enum_integer(AssDBTypeVar));\
                 }\
                 auto vvpost = std::bind(funcpost, &_inst2, std::placeholders::_1);\
                 vvpost(ret);\
@@ -524,109 +192,31 @@ using std::map;
             strret = my_to_string(ret);\
             co_return strret;\
         });\
-        SMNetwork::addRouterHtml(SMNetwork::combinePath(_mainc, AssTypeVar), lambdax); }
+        SMNetwork::addRouterJson(SMNetwork::combinePath(_mainc, AssTypeVar), lambdax); }
 
-#define ADD_ROUTER_DBREQ_POST_HTML(func, funcpost, ParamterType, DBParamterType, ReturnType, AssTypeVar, AssDBTypeVar) {\
-    auto lambdax = make_shared<RouterFuncType>([](string msg) -> asio::awaitable<string> {\
-            ParamterType req;\
-            ReturnType ret;\
-            string strret;\
-            if (!my_json_parse_from_string(req, msg)) \
-            {\
-                ret.code = to_underlying(statusCode::invalidJson);\
-            }\
-            else\
-            {\
-                auto vv = std::bind(func, &_inst2, std::placeholders::_1);\
-                ReturnType ret;\
-                auto dbreq = vv(req);\
-                {\
-				    if (!co_await DBCMGRREF.executeQuery(dbreq, ret, AssDBTypeVar))\
-				    {\
-					    SPDLOG_WARN("execute db query failed");\
-				    }\
-                }\
-                auto vvpost = std::bind(funcpost, &_inst2, std::placeholders::_1);\
-                vvpost(ret);\
-            }\
-            strret = my_to_string(ret);\
-            co_return strret;\
-        });\
-        SMNetwork::addRouterHtml(SMNetwork::combinePath(_mainc, AssTypeVar), lambdax); }
 
-#define ADD_ROUTER2_HTML(func, ParamterType, DBParamterType, ReturnType, AssTypeVar, AssDBTypeVar) {\
-    auto lambdax = make_shared<RouterFuncType>([](string msg) -> asio::awaitable<string> {\
-            ParamterType req;\
-            ReturnType ret;\
-            string strret;\
-            if (!my_json_parse_from_string(req, msg)) \
-            {\
-                ret.code = to_underlying(statusCode::invalidJson);\
-            }\
-            else\
-            {\
-                auto vv = std::bind(func, &_inst2, std::placeholders::_1);\
-                ReturnType ret;\
-                auto dbreq = vv(req);\
-                {\
-				    if (!co_await DBCMGRREF.executeQuery(dbreq, ret, AssDBTypeVar))\
-				    {\
-					    SPDLOG_WARN("execute db query failed");\
-				    }\
-                }\
-            }\
-            strret = my_to_string(ret);\
-            co_return strret;\
-        });\
-        SMNetwork::addRouterHtml(SMNetwork::combinePath(_mainc, AssTypeVar), lambdax); }
-
-#define ADD_ROUTER_RETURN_STR_HTML(func, AssTypeVar) {\
-    auto lambdax = make_shared<RouterFuncType>([](string msg, string token) -> asio::awaitable<string> {\
+#define ROUTER_RETURN_STR_HTML(func, AssTypeVar) {\
+    auto lambdax = make_shared<RouterFuncType>([](string& msg, string token) -> asio::awaitable<RouterFuncReturnType> {\
             auto vv = std::bind(func, &_inst2,  std::placeholders::_1);\
-            string strret = co_await vv(msg);\
+            RouterFuncReturnType strret = co_await vv(msg);\
             co_return strret;\
         });\
         SMNetwork::addRouterHtml(SMNetwork::combinePath(_mainc, AssTypeVar), lambdax); }
-
-#define ADD_ROUTER_DB_HTML(func, ParamterType, ReturnType, AssTypeVar) {\
-    auto lambdax = make_shared<RouterFuncType>([](string msg, string token) -> asio::awaitable<string> {\
-            ParamterType req;\
-            ReturnType ret;\
-            string strret;\
-            if (!my_json_parse_from_string(req, msg)) \
-            {\
-                ret.code = to_underlying(statusCode::invalidJson);\
-            }\
-            else\
-            {\
-                bool bret = SMDB::beforeQuery();\
-                if(!bret) \
-                {\
-                  co_return my_to_string(jwtCheckFailedJSONRep());\
-                }\
-                auto vv = std::bind(func, &_inst2,  std::placeholders::_1);\
-                SMDB::afterQuery();\
-                ReturnType ret = co_await vv(req);\
-            }\
-            co_return my_to_string(ret);\
-        });\
-        SMNetwork::addRouterHtml(SMNetwork::combinePath(_mainc, AssTypeVar), lambdax); }
-
 
 #define END_ROUTER_MAP }
 
-template<class T>
+template<class T, class MainType>
 class HttpCmdTag : public MainCmdTag
 {
 public:
 	static T _inst2;
-	static MainCmd _mainc;
+	static MainType _mainc;
 	HttpCmdTag() {}
 
 
 	static T& Inst() { return _inst2; }
 	static void MyInit() { _inst2.init(ServeMode::SBind); }
-	static MainCmd GetMainCmd() { return _mainc; }
+	static MainType GetMainCmd() { return _mainc; }
 
 private:
 	class methodRegistrator
@@ -643,9 +233,9 @@ protected:
 	bool _inited = false;
 };
 
-template<class T>
-T HttpCmdTag<T>::_inst2;
+template<class T,class MainType>
+T HttpCmdTag<T, MainType>::_inst2;
 
-template<class T>
-MainCmd HttpCmdTag<T>::_mainc;
+template<class T, class MainType>
+MainType HttpCmdTag<T, MainType>::_mainc;
 

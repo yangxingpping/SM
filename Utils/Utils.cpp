@@ -10,6 +10,7 @@
 #include "os/os.h"
 
 #include <memory>
+#include <atomic>
 
 using base32 = cppcodec::base32_crockford;
 using base64 = cppcodec::base64_rfc4648;
@@ -24,49 +25,10 @@ using std::make_tuple;
 
 namespace SMUtils
 {
-	static std::string _issuer{"alqaz"};
-	static std::string _type{"JWS"};
-	static std::string _key{"key"};
-	static uint32_t _expiresecond{3600};
 
-	UTILS_EXPORT void initjwtconfig(string_view issuer/*="alqaz"*/, string_view type/*="JWS"*/, string_view key/*="key"*/, uint32_t expiresecond/*=3600*/)
-	{
-		_issuer = issuer;
-		_type = type;
-		_key = key;
-		_expiresecond = expiresecond;
-	}
-
-	UTILS_EXPORT bool isjwttokenright(string_view token)
-	{
-		bool bret{ false };
-		if (token.empty())
-		{
-			return bret;
-		}
-		auto ver = jwt::verify().allow_algorithm(jwt::algorithm::hs256{ _key }).with_issuer(_issuer);
-		BEGIN_STD;
-		auto decoded = jwt::decode(token.data());
-		std::error_code ec;
-		ver.verify(decoded, ec);
-		if (ec.value() != 0)
-		{
-			SPDLOG_WARN("jwt token {} failed with {} {}", token, ec.value(), ec.message());
-		}
-		bret = (ec.value() == 0) ? true : false;
-		END_STD;
-		
-		return bret;
-	}
-
-	UTILS_EXPORT string getjwttoken()
-	{
-		string ret;
-		auto token = jwt::create();
-		ret = token.set_issuer(_issuer).set_type(_type).set_expires_at(std::chrono::system_clock::now() + std::chrono::seconds(_expiresecond)).set_payload_claim("name", jwt::claim(std::string("alqaz"))).sign(jwt::algorithm::hs256{ _key });
-		return ret;
-	}
-
+	static map<int, string> _dbValue2Name;
+	static map<int, string> _mainValue2Name;
+	
 	UTILS_EXPORT void packuint16(std::string& dst, uint16_t src)
 	{
 		uint8_t tmp[sizeof(src)];
@@ -162,10 +124,12 @@ namespace SMUtils
  			return std::make_tuple<bool, string_view>(std::move(bret), string_view());
 		}
 		const char* tmp = src.data();
+		uint32_t nu32 = *((uint32_t*)(tmp));
 #ifdef _WIN32
-		dst = static_cast<uint32_t>(ntohl(static_cast<u_short>(*(uint32_t*)tmp)));
+		
+		dst = static_cast<uint32_t>(ntohl(nu32));
 #else
-		dst = ntohl(*(uint32_t*)tmp);
+		dst = ntohl(nu32);
 #endif
 		bret = true;
 		return std::make_tuple(std::move(bret), string_view(src.data() + sizeof(dst), src.length() - sizeof(dst)));
@@ -235,57 +199,34 @@ namespace SMUtils
 		ret = base64::encode<deque<uint8_t>>(ch, 8);
 		return ret;
 		}
+	static std::atomic<uint32_t> _u32tSeq = 0;
+	UTILS_EXPORT seqNumType getSeqNum()
+	{
+		seqNumType ret = ++_u32tSeq;
+		return ret;
+	}
 
-	string packheads(MainCmd mainc, short assc) {
+	string packheads(uint16_t mainc, short assc) {
 		string strret;
 		deque<uint8_t> ret;
 		char ch[5] = { 0 };
 		auto mc = htons((u_short)(mainc));
-		auto ac = htons((u_short)(assc));
+		auto ac = htons(static_cast<u_short>(assc));
 		memcpy(ch, &mc, sizeof(mc));
 		memcpy(ch + 2, &ac, sizeof(ac));
 		ret = base64::encode<deque<uint8_t>>(ch, 4);
 		std::ostringstream convert;
-		for (size_t a = 0; a < ret.size(); a++) {
+		for (size_t a = 0; a < ret.size(); a++) 
+		{
 			convert << ret[a];
 		}
 		strret = convert.str();
 		return strret;
 	}
 
-	static LogRemoteConfig _remote;
-	static LogContextConfig _context;
-	static vector<shared_ptr<spdlog::sinks::sink>> _sinks;
-	static shared_ptr<spdlog::logger> _loger = { nullptr };
-
-	bool SInitLog(const LogConfig& conf)
-	{
-		return InitLog(conf);
-	}
-
 	
 
-	bool InitLog(const LogConfig& conf)
-	{
-		bool bret = true;
-		_remote = conf._remote;
-		_context = conf._context;
-
-		auto outsink = make_shared<spdlog::sinks::stdout_color_sink_mt>();
-		outsink->set_level((spdlog::level::level_enum)_context._level);
-		_sinks.push_back(outsink);
-
-		auto rotatesink = make_shared<spdlog::sinks::rotating_file_sink_mt>(_context._filepath + _context._file, _context._fileRollSize, _context.rollfilecount);
-		rotatesink->set_level((spdlog::level::level_enum)_context._level);
-		_sinks.push_back(rotatesink);
-
-		_loger = shared_ptr<spdlog::logger>(new spdlog::logger("loger", _sinks.begin(), _sinks.end()));
-		_loger->set_pattern(_context._format);
-		_loger->set_level((spdlog::level::level_enum)_context._level);
-		spdlog::set_default_logger(_loger);
-		spdlog::default_logger()->flush_on(spdlog::level::info);
-		return bret;
-	}
+	
 
 	string getConfigPrefixPath()
 	{
@@ -326,7 +267,7 @@ namespace SMUtils
 			auto pos = str.find('&');
 			if (pos != string::npos)
 			{
-				vtemp.push_back(string(str.c_str(), pos));
+				vtemp.emplace_back(string(str.c_str(), pos));
 			}
 			else
 			{
@@ -350,6 +291,72 @@ namespace SMUtils
 			vtemp.erase(it);
 		}
 		return ret;
+	}
+
+	UTILS_EXPORT bool addOpDBValue2Name(int v, string_view name)
+	{
+		if(_dbValue2Name.contains(v))
+		{
+			SPDLOG_WARN("value[{}] have name [{}], new name [{}] can not set", v, _dbValue2Name[v], name);
+			return false;
+		}
+		_dbValue2Name[v] = name;
+		return true;
+	}
+
+	UTILS_EXPORT string_view getOpDBNameByValue(int v)
+	{
+		static string dbNotFound = fmt::format("db {} not found", v);
+		auto it = _dbValue2Name.find(v);
+		if(it!=_dbValue2Name.end())
+		{
+			return string_view(it->second);
+		}
+		SPDLOG_WARN("db main value {} not found", v);
+		return string_view(dbNotFound);
+	}
+
+	UTILS_EXPORT bool addMainValue2Name(int v, string_view name)
+	{
+		if (_mainValue2Name.contains(v))
+		{
+			SPDLOG_WARN("value[{}] have name [{}], new name [{}] can not set", v, _mainValue2Name[v], name);
+			return false;
+		}
+		_mainValue2Name[v] = name;
+		return true;
+	}
+
+	UTILS_EXPORT string packstring(string_view msg)
+	{
+		thread_local string ret;
+		ret.clear();
+		packuint32(ret, (uint32_t)(msg.length()));
+		ret += msg;
+		return ret;
+	}
+
+	UTILS_EXPORT string_view unpackstring(string_view msg)
+	{
+		uint32_t strlen = 0;
+		auto ret = unpackuint32(msg, strlen);
+		if (!std::get<0>(ret) || strlen+sizeof(uint32_t)>=msg.length())
+		{
+			return string_view("");
+		}
+		return string_view(std::get<1>(ret).data(), strlen);
+	}
+
+	UTILS_EXPORT string_view getMainNameByValue(int v)
+	{
+		static string mainNotFound = fmt::format("main {} not found", v);
+		auto it = _mainValue2Name.find(v);
+		if (it != _mainValue2Name.end())
+		{
+			return string_view(it->second);
+		}
+		SPDLOG_WARN("main value {} not found", v);
+		return string_view(mainNotFound);
 	}
 
 };

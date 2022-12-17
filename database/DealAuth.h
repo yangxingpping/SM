@@ -16,41 +16,33 @@ namespace SMDB
 
 	class DBManager;
 
-	class DealAuth : public HttpCmdTag<DealAuth>
+	class DealAuth : public HttpCmdTag<DealAuth, MainCmd>
 	{
 	public:
 		DealAuth();
 		virtual ~DealAuth();
 	public:
 		BEGIN_ROUTER_MAP(MainCmd::User);
-		ADD_ROUTER_DYNAMIC_NEED_DB_JSON(&DealAuth::regist, &DealAuth::lregist, RegistReq, RegistRep, AssAuth::Regist, AssDB::Regist);
-		ADD_ROUTER_DYNAMIC_NEED_DB_JSON(&DealAuth::login, &DealAuth::llogin, LoginReq, LoginRep, AssAuth::Login, AssDB::Login);
-		ADD_ROUTER_DYNAMIC_NEED_DB_JSON(&DealAuth::addSysAdmin, &DealAuth::laddSysAdmin, addSysAdminReq, addSysAdminRep, AssAuth::AddSysAdmin, AssDB::AddSysAdmin);
-		ADD_ROUTER_DYNAMIC_NEED_DB_JSON(&DealAuth::getSysAdmin, &DealAuth::lgetSysAdmin, getSysAdminReq, getSysAdminRep, AssAuth::GetSysAdmin, AssDB::GetSysAdmin);
-		ADD_ROUTER_DYNAMIC_NEED_DB_JSON(&DealAuth::delSysAdmin, &DealAuth::ldelSysAdmin, delSysAdminReq, delSysAdminRep, AssAuth::DelSysAdmin, AssDB::DelSysAdmin);
-		ADD_ROUTER_DYNAMIC_NEED_DB_JSON(&DealAuth::getUserGenInfo, &DealAuth::lgetUserGenInfo, getUserGenInfoReq, getUserGenInfoRep, AssAuth::GetUserGenInfo, AssDB::GetUserGenInfo);
+		ROUTER_NEED_CACHE_DB_JSON(&DealAuth::lregist, RegistReq, RegistRep, AssAuth::Regist, AssDB::Regist);
+		ROUTER_NEED_CACHE_DB_JSON(&DealAuth::llogin, LoginReq, LoginRep, AssAuth::Login, AssDB::Login);
+		ROUTER_NEED_CACHE_DB_JSON(&DealAuth::laddSysAdmin, addSysAdminReq, addSysAdminRep, AssAuth::AddSysAdmin, AssDB::AddSysAdmin);
+		ROUTER_NEED_CACHE_DB_JSON(&DealAuth::lgetSysAdmin, getSysAdminReq, getSysAdminRep, AssAuth::GetSysAdmin, AssDB::GetSysAdmin);
+		ROUTER_NEED_CACHE_DB_JSON(&DealAuth::ldelSysAdmin, delSysAdminReq, delSysAdminRep, AssAuth::DelSysAdmin, AssDB::DelSysAdmin);
+		ROUTER_NEED_CACHE_DB_JSON(&DealAuth::lgetUserGenInfo, getUserGenInfoReq, getUserGenInfoRep, AssAuth::GetUserGenInfo, AssDB::GetUserGenInfo);
 		END_ROUTER_MAP;
 		
 
-		bool regist(RegistReq& req);
-		bool login(LoginReq& req);
-		bool addSysAdmin(addSysAdminReq& req);
-		bool getSysAdmin(getSysAdminReq& req);
-		bool delSysAdmin(delSysAdminReq& req);
-		bool getUserGenInfo(getUserGenInfoReq& req);
+		bool lregist(RegistReq& req, RegistRep& rep);
+		bool llogin(LoginReq& req, LoginRep& rep);
+		bool laddSysAdmin(addSysAdminReq& req, addSysAdminRep& rep);
+		bool lgetSysAdmin(getSysAdminReq& req, getSysAdminRep& rep);
+		bool ldelSysAdmin(delSysAdminReq& req, delSysAdminRep& rep);
+		bool lgetUserGenInfo(getUserGenInfoReq& req, getUserGenInfoRep& rep);
 
-		RegistRep lregist(RegistReq& req);
-		LoginRep llogin(LoginReq& req);
-		addSysAdminRep laddSysAdmin(addSysAdminReq& req);
-		getSysAdminRep lgetSysAdmin(getSysAdminReq& req);
-		delSysAdminRep ldelSysAdmin(delSysAdminReq& req);
-		getUserGenInfoRep lgetUserGenInfo(getUserGenInfoReq& req);
+		
 
-		PackType getPackType() override;
 		void init(ServeMode mode) override;
 
-	private:
-		PackType _packtype;
 	};
 }
 

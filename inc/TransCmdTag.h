@@ -6,11 +6,17 @@
 #include "enums.h"
 #include "database.h"
 #include "reqreps.h"
+#include "boost/callable_traits/function_type.hpp"
+#include "boost/callable_traits/return_type.hpp"
+#include "boost/callable_traits/args.hpp"
 #include "networkinterface.h"
 #include "asio/awaitable.hpp"
+#include "asio/co_spawn.hpp"
+#include "asio/detached.hpp"
 #include "IOContextManager.h"
 #include "iguana/json.hpp"
 #include "CoEvent.h"
+#include "templatefuncs.h"
 #include <string>
 #include <string_view>
 #include <stdint.h>
@@ -26,36 +32,128 @@ using std::string_view;
 using asio::awaitable;
 using std::map;
 
-#define BEGIN_ROUTER_MAP_TRANS(mainc) static void initPathRouting(){ \
+#define BEGIN_DB try{
+#define END_DB }\
+catch(const std::runtime_error& e)\
+{\
+    SPDLOG_WARN("db query error with runtime exception {}", e.what());\
+}\
+catch (const std::exception& e)\
+{\
+    SPDLOG_WARN("db query error with std exception {}", e.what());\
+}\
+catch (...)\
+{\
+    SPDLOG_WARN("db query error with no expected exception");\
+}
+
+#define BEGIN_ROUTER_MAP_DB(mainc) static void initPathRouting(){ \
    _mainc = mainc;\
     auto vv = std::make_shared<DependIOCTXInitFuncType>([](){\
             MyInit();\
         });\
     SMHotupdate::AddDependIOCTXInitFunc(vv);
-#define ADD_ROUTER_TRANS(func, ParamterType, ReturnType, AssTypeVar) {\
-    auto lambdax = make_shared<RouterFuncType>([](string msg) -> asio::awaitable<string> {\
-            ParamterType req;\
-            ReturnType ret;\
-            string strret;\
-            if (!my_json_parse_from_string(req, msg)) \
-            {\
-              ret.code=to_underlying(statusCode::invalidJson);\
-            }\
-            else\
-            {\
-                auto vv = std::bind(func, &_inst2,  std::placeholders::_1);\
-                ret = co_await vv(req);\
-            }\
-            strret = my_to_string(ret);\
-            co_return strret;\
-        });\
-        SMNetwork::addRouterTrans(_mainc, (int)(AssTypeVar), lambdax); }
 
-#define ADD_ROUTER_DB_TRANS(func, ParamterType, ReturnType, AssTypeVar) {\
-    auto lambdax = make_shared<RouterFuncType>([](string msg, string token) -> asio::awaitable<string> {\
+template<typename F, typename ParamterType, typename AssType, typename Inst>
+void ROUTER_DBT(F func, AssType asstype, Inst* inst)
+{
+    using ReturnType = boost::callable_traits::return_type_t<F>;
+	auto lambdax = make_shared<RouterFuncType>([](string& msg, string token) -> asio::awaitable<RouterFuncReturnType> {
+	ParamterType req;
+	ReturnType ret;
+	RouterFuncReturnType strret;
+	SPDLOG_INFO("req type {}", typeid(req).name());
+	if (!my_json_parse_from_string(req, msg))
+	{
+		invalidJSONRep rep;
+		SPDLOG_WARN("parse req json {} failed", msg.data());
+		co_return my_to_string(rep);
+	}
+	else
+	{
+		bool bret = SMDB::beforeQuery(string_view{ req.token });
+		if (!bret)
+		{
+			jwtCheckFailedJSONRep rep;
+			co_return my_to_string(rep);
+		}
+		else
+		{
+			
+		}
+	}
+	strret = my_to_string(ret);
+	SPDLOG_INFO("database query return {}", *strret);
+	co_return strret;
+		});
+}
+
+template<typename F, typename AssType, typename Inst>
+void ROUTER_DBT2(F func, AssType asstype, Inst* inst)
+{
+	using ReturnType = boost::callable_traits::return_type_t<F>;
+    using Args = boost::callable_traits::args_t<F>;
+    auto lambdax = make_shared<RouterFuncType>([=](string& msg, string token) -> asio::awaitable<RouterFuncReturnType> {
+        RouterFuncReturnType strret;
+    using CommFuncTypes = decltype(cdr(std::declval<Args>()));
+    CommFuncTypes args;
+    bool bArgsParse{ true };
+    size_t offset{ 0 };
+	ReturnType ret;
+	
+    SMUtils::for_each(args, [&](auto& arg) {
+		auto strparam = SMUtils::unpackstring(string_view(msg.data() + offset, msg.length() - offset));
+    bArgsParse = my_json_parse_from_string(arg, strparam);
+	if (!bArgsParse)
+	{
+		return;
+	}
+	offset += (strparam.length() + sizeof(uint32_t));
+
+		});
+	if (!bArgsParse)
+	{
+		invalidJSONRep rep;
+		SPDLOG_WARN("parse req json {} failed", msg.data());
+		co_return my_to_string(rep);
+	}
+    else
+    {
+        std::tuple<Inst*> ff = std::make_tuple(inst);
+        auto funcargs = std::tuple_cat(ff, args);
+		SMHotupdate::CoEvent ev; 
+		TFEXEC.async([&]() {
+			SPDLOG_INFO("start send query to database"); 
+            BEGIN_DB;
+            ret.code = magic_enum::enum_integer(statusCode::sqlExecuteFailed);
+            ret = std::apply(func, std::tuple_cat(ff, args));
+            END_DB;
+			asio::co_spawn(IOCTX, [&ev]()->asio::awaitable<void> {
+				ev.trigger(); 
+				co_return; 
+				}, asio::detached); 
+			}); 
+		SPDLOG_INFO("start wait query finish in asio"); 
+		co_await ev.async_wait(); 
+    }
+	strret = my_to_string(ret);
+	//SPDLOG_INFO("database query return {}", *strret);
+	co_return strret;
+		});
+    SMNetwork::addRouterTrans(inst->_mainc, (int)(asstype), lambdax);
+}
+
+#define ROUTER_DB2(func, ParamterType, asstype)\
+    ROUTER_DBT<decltype(func), ParamterType, decltype(asstype), decltype(_inst2)>(func, asstype, &_inst2);
+
+#define ROUTER_DB3(func, asstype)\
+    ROUTER_DBT2<decltype(func), decltype(asstype), decltype(_inst2)>(func, asstype, &_inst2);
+
+#define ROUTER_DB(func, ParamterType, ReturnType, asstype) {\
+    auto lambdax = make_shared<RouterFuncType>([](string& msg, string token) -> asio::awaitable<RouterFuncReturnType> {\
             ParamterType req;\
             ReturnType ret;\
-            string strret;\
+            RouterFuncReturnType strret;\
             SPDLOG_INFO("req type {}", typeid(req).name());\
             if (!my_json_parse_from_string(req, msg)) \
             {\
@@ -89,17 +187,17 @@ using std::map;
                 }\
             }\
             strret = my_to_string(ret);\
-            SPDLOG_INFO("database query return {}", strret); \
+            SPDLOG_INFO("database query return {}", *strret); \
             co_return strret;\
         });\
-        SMNetwork::addRouterTrans(_mainc, (int)(AssTypeVar), lambdax); }
+        SMNetwork::addRouterTrans(_mainc, (int)(asstype), lambdax); }
 
 
-#define ADD_ROUTER_DB_TRANS_NO_BEFORE_QUERY(func, ParamterType, ReturnType, AssTypeVar) {\
-    auto lambdax = make_shared<RouterFuncType>([](string msg, string token) -> asio::awaitable<string> {\
+#define ROUTER_DB_TRANS_NO_PRE_POST(func, ParamterType, ReturnType, AssTypeVar) {\
+    auto lambdax = make_shared<RouterFuncType>([](string& msg, string token) -> asio::awaitable<RouterFuncReturnType> {\
             ParamterType req;\
             ReturnType ret;\
-            string strret;\
+            RouterFuncReturnType strret;\
             SPDLOG_INFO("req type {}", typeid(req).name());\
             if (!my_json_parse_from_string(req, msg)) \
             {\
@@ -123,26 +221,24 @@ using std::map;
                 SMDB::afterQuery();\
             }\
             strret = my_to_string(ret);\
-            SPDLOG_INFO("database query return {}", strret);\
+            SPDLOG_INFO("database query return {}", *strret);\
             co_return strret;\
         });\
         SMNetwork::addRouterTrans(_mainc, (int)(AssTypeVar), lambdax); }
 
-#define END_ROUTER_MAP_TRANS }
+#define END_ROUTER_MAP_DB }
 
-template<class T>
+template<class T, class MainType>
 class TransCmdTag : public MainCmdTag 
 {
     public:
       static T _inst2;
-      static MainCmd _mainc;
+      static MainType _mainc;
     TransCmdTag(){}
 
     static void MyInit() { _inst2.init(ServeMode::SBind); }
 
-    virtual PackType getPackType() override{
-      return PackType::FixMainSubHead;
-    }
+   
 
     private:
     class methodRegistrator
@@ -156,9 +252,9 @@ class TransCmdTag : public MainCmdTag
     methodRegistrator _inst;
 };
 
-template<class T>
-T TransCmdTag<T>::_inst2;
+template<class T, class MainType>
+T TransCmdTag<T, MainType>::_inst2;
 
-template<class T>
-MainCmd TransCmdTag<T>::_mainc;
+template<class T, class MainType>
+MainType TransCmdTag<T, MainType>::_mainc;
 

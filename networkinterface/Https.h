@@ -23,6 +23,7 @@
 #include <string_view>
 #include <memory>
 #include <vector>
+#include <set>
 
 using std::shared_ptr;
 using std::vector;
@@ -35,8 +36,11 @@ namespace SMNetwork
 	class NETWORKINTERFACE_EXPORT Https
 	{
 	public:
-		static void addResHeader(string& k, string& v);
 		static Https& getDefaultInst();
+		static map<string, string>& getRespHeaders(HtmlBodyType type);
+		static HtmlBodyType getRespBodyType(const string& context);
+		static HtmlBodyType getRespBodyType(string_view context);
+		static void sInit();
 	public:
 		Https();
 		Https(const Https&) = delete;
@@ -59,14 +63,16 @@ namespace SMNetwork
 	protected:
 		bool _isAuthed(string_view url, const string& token);
 		bool _initRes();
-		bool _initHttp(std::map<string, string>* headers, HtmlBodyType bodytype);
+		bool _initHttp(HtmlBodyType bodytype);
 		bool _initHtml();
 		bool _initJson();
 		bool _initWs();
 
 	private:
 		uWS::TemplatedApp<useSSL>* _app = nullptr;
-
+		uWS::Loop* _loop = nullptr;
+		uWS::Loop* _loopinit = nullptr;
+		std::set<uWS::HttpResponse<useSSL>*> _abortReps;
 
 		string _httpRoot;
 		string _jsonRoot;

@@ -14,6 +14,7 @@
 #include "asio/redirect_error.hpp"
 #include "asio/co_spawn.hpp"
 #include "IOContextManager.h"
+#include "networkinterface.h"
 #include "CoEvent.h"
 #include "fmt/format.h"
 #include "asio/co_spawn.hpp"
@@ -21,7 +22,6 @@
 #include "asio/strand.hpp"
 #include "FileOp.h"
 #include <future>
-
 #include "catch.hpp"
 #include <atomic>
 
@@ -29,7 +29,7 @@ using Catch::Matchers::Equals;
 
 using namespace std;
 
-class demo : public HttpCmdTag<demo>
+class demo : public HttpCmdTag<demo, MainCmd>
 {
 public:
 	demo()
@@ -49,8 +49,58 @@ int main(int argc, char* argv[])
 	SPDLOG_INFO("repeat count {}", repeatcount);
 	int result = Catch::Session().run(argc, argv);
 	
+	
 	return result;
 }
+
+//TEST_CASE("jwt 1", "encode and decode right")
+//{
+//	auto ver = jwt::verify().allow_algorithm(jwt::algorithm::hs256{ "key" }).with_issuer("alqaz");
+//	auto token = jwt::create();
+//	auto strtoken = token.set_issuer("alqaz").set_type("JWS").set_payload_claim("sample", jwt::claim(std::string("test")))
+//		.set_expires_at(std::chrono::system_clock::now() + std::chrono::seconds(3600))
+//		.sign(jwt::algorithm::hs256{ "key" });
+//
+//	auto decoded = jwt::decode(strtoken);
+//	auto payloads = decoded.get_payload();
+//	std::error_code ec;
+//	ver.verify(decoded, ec);
+//	if (ec.value() != 0)
+//	{
+//		SPDLOG_ERROR("verify error code {}, error msg {}", ec.value(), ec.message());
+//	}
+//	REQUIRE(ec.value() == 0);
+//}
+//
+//TEST_CASE("jwt 2", "encode and decode with wrong key")
+//{
+//	auto ver = jwt::verify().allow_algorithm(jwt::algorithm::hs256{ "key" }).with_issuer("alqaz");
+//	auto token = jwt::create();
+//	auto strtoken = token.set_issuer("alqaz").set_type("JWS").set_payload_claim("sample", jwt::claim(std::string("test")))
+//		.set_expires_at(std::chrono::system_clock::now() + std::chrono::seconds(3600))
+//		.sign(jwt::algorithm::hs256{ "keyx" });
+//
+//	auto decoded = jwt::decode(strtoken);
+//	auto payloads = decoded.get_payload();
+//	std::error_code ec;
+//	ver.verify(decoded, ec);
+//	REQUIRE_FALSE(ec.value() == 0);
+//}
+//
+//TEST_CASE("jwt 3", "encode and decode with timeout")
+//{
+//	auto ver = jwt::verify().allow_algorithm(jwt::algorithm::hs256{ "key" }).with_issuer("alqaz");
+//	auto token = jwt::create();
+//	auto strtoken = token.set_issuer("alqaz").set_type("JWS").set_payload_claim("sample", jwt::claim(std::string("test")))
+//		.set_expires_at(std::chrono::system_clock::now() + std::chrono::microseconds(1))
+//		.sign(jwt::algorithm::hs256{ "key" });
+//	std::this_thread::sleep_for(std::chrono::milliseconds(10));
+//	auto decoded = jwt::decode(strtoken);
+//	auto payloads = decoded.get_payload();
+//	std::error_code ec;
+//	ver.verify(decoded, ec);
+//	REQUIRE_FALSE(ec.value() == 0);
+//}
 
 TEST_CASE("asio exception ", "coroutine throw exception at co_spawn")
 {

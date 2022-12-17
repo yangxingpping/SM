@@ -52,9 +52,7 @@ class NNGCommBase : public NNgServerBase
 
     
 
-    virtual PackType getPackType() override {
-        return _packType;
-    }
+    
 
     virtual NNgTransType getNNgTransType() override{
         return _trans;
