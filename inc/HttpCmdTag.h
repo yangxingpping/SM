@@ -4,9 +4,9 @@
  * @brief macros define for gateway routers
  * @version 0.1
  * @date 2022-11-08
- * 
+ *
  * @copyright Copyright (c) 2022
- * 
+ *
  */
 
 #pragma once
@@ -20,6 +20,9 @@
 #include "asio/awaitable.hpp"
 #include "IOContextManager.h"
 #include "DBConnectManager.h"
+#include "boost/callable_traits/function_type.hpp"
+#include "boost/callable_traits/return_type.hpp"
+#include "boost/callable_traits/args.hpp"
 #include "iguana/json.hpp"
 #include <string>
 #include <string_view>
@@ -74,9 +77,9 @@ using std::map;
         });\
         SMNetwork::addRouterJson(SMNetwork::combinePath(_mainc, AssTypeVar), lambdax); }
 
-  /**
-   * router send req to local cache, if cache hit, return rep; else, send req to db proxy, then return rep
-   */
+ /**
+  * router send req to local cache, if cache hit, return rep; else, send req to db proxy, then return rep
+  */
 #define ROUTER_NEED_CACHE_DB_JSON(localQuery, ParamterType, ReturnType, AssTypeVar, AssDBTypeVar) {\
     auto lambdax = make_shared<RouterFuncType>([](string& msg, string token) -> asio::awaitable<RouterFuncReturnType> {\
             ParamterType req;\
@@ -103,9 +106,9 @@ using std::map;
         });\
         SMNetwork::addRouterJson(SMNetwork::combinePath(_mainc, AssTypeVar), lambdax); }
 
-   /**
-      * router send req to local cache and direct return rep
-      */
+  /**
+	 * router send req to local cache and direct return rep
+	 */
 #define ROUTER_NEED_CACHE_JSON(localQuery, ParamterType, ReturnType, AssTypeVar, AssDBTypeVar) {\
     auto lambdax = make_shared<RouterFuncType>([](string& msg, string token) -> asio::awaitable<RouterFuncReturnType> {\
             ParamterType req;\
@@ -127,12 +130,12 @@ using std::map;
             SPDLOG_INFO("execute query {} get response {}", msg, *strret);\
             co_return strret;\
         });\
-        SMNetwork::addRouterJson(SMNetwork::combinePath(_mainc, AssTypeVar), lambdax); }
+        SMNetwork::addRouterJson(SMNetwork::combinePath(_mainc, AssTypeVar), lambdax); }WEQKJRWEJREW234231432
 
-/**
- * @brief router uniform db request, send db request to db proxy, return rep
- * 
- */
+	 /**
+	  * @brief router uniform db request, send db request to db proxy, return rep
+	  *
+	  */
 #define ROUTER_NEED_DBREQ_DB_JSON(func, ParamterType, DBParamterType, ReturnType, AssTypeVar, AssDBTypeVar) {\
     auto lambdax = make_shared<RouterFuncType>([](string& msg, string token) -> asio::awaitable<RouterFuncReturnType> {\
             ParamterType req;\
@@ -161,9 +164,62 @@ using std::map;
         SMNetwork::addRouterJson(SMNetwork::combinePath(_mainc, AssTypeVar), lambdax); }
 
 
+//#define ROUTER_NEED_DBREQ_DB_JSON2(func, ParamterType, DBParamterType, AssTypeVar, AssDBTypeVar)\
+//    ROUTER_QUERY()
+
+
+template<typename F, typename AssType, typename Inst>
+void ROUTER_QUERY(F func, AssType asstype, Inst* inst)
+{
+	using ReturnType = boost::callable_traits::return_type_t<F>;
+	using Args = boost::callable_traits::args_t<F>;
+
+	auto lambdax = make_shared<RouterFuncType>([](string& msg, string token) -> asio::awaitable<RouterFuncReturnType> {
+		RouterFuncReturnType strret;
+	using CommFuncTypes = decltype(cdr(std::declval<Args>()));
+	CommFuncTypes args;
+	bool bArgsParse{ true };
+	size_t offset{ 0 };
+	ReturnType ret;
+
+	SMUtils::for_each(args, [&](auto& arg) {
+		auto strparam = SMUtils::unpackstring(string_view(msg.data() + offset, msg.length() - offset));
+	bArgsParse = my_json_parse_from_string(arg, strparam);
+	if (!bArgsParse)
+	{
+		return;
+	}
+	offset += (strparam.length() + sizeof(uint32_t));
+
+		});
+	if (!bArgsParse)
+	{
+		invalidJSONRep rep;
+		SPDLOG_WARN("parse req json {} failed", msg.data());
+		co_return my_to_string(rep);
+	}
+	else
+	{
+		if (!token.empty())
+		{
+			std::get<0>(args).token = token;
+		}
+        std::tuple<Inst*> ff = new std::tuple<Inst*>(inst);
+		auto dbreq = std::apply(func, std::tuple_cat(ff, args));
+		ReturnType ret;
+		{
+			co_await DBCMGRREF.executeQuery(dbreq, ret, magic_enum::enum_integer(asstype));
+		}
+	}
+	strret = my_to_string(ret);
+	co_return strret;
+		});
+	SMNetwork::addRouterJson(SMNetwork::combinePath(inst->_mainc, asstype), lambdax);
+}
+
 /**
  * @brief router unifrom db request , send db request to database proxy, convert db rep, return rep
- * 
+ *
  */
 #define ROUTER_NEED_DBREQ_DB_DBREP_JSON(func, funcpost, ParamterType, DBParamterType, ReturnType, AssTypeVar, AssDBTypeVar) {\
     auto lambdax = make_shared<RouterFuncType>([](string& msg, string token) -> asio::awaitable<RouterFuncReturnType> {\
@@ -233,7 +289,7 @@ protected:
 	bool _inited = false;
 };
 
-template<class T,class MainType>
+template<class T, class MainType>
 T HttpCmdTag<T, MainType>::_inst2;
 
 template<class T, class MainType>
