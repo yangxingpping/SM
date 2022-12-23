@@ -130,7 +130,7 @@ using std::map;
             SPDLOG_INFO("execute query {} get response {}", msg, *strret);\
             co_return strret;\
         });\
-        SMNetwork::addRouterJson(SMNetwork::combinePath(_mainc, AssTypeVar), lambdax); }WEQKJRWEJREW234231432
+        SMNetwork::addRouterJson(SMNetwork::combinePath(_mainc, AssTypeVar), lambdax); }
 
 	 /**
 	  * @brief router uniform db request, send db request to db proxy, return rep
