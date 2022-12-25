@@ -36,7 +36,7 @@ generate_export_header(hashlibrary EXPORT_FILE_NAME ${CMAKE_CURRENT_SOURCE_DIR}/
 
 
 
-#target_link_libraries(HASHLIB  PRIVATE uSockets2  PRIVATE Utils PRIVATE configs PRIVATE networkinterface PRIVATE spdlog::spdlog PRIVATE hotupdate)
+#target_link_libraries(HASHLIB    PRIVATE Utils PRIVATE configs PRIVATE networkinterface PRIVATE spdlog::spdlog PRIVATE hotupdate)
 
 
 

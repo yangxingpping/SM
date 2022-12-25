@@ -26,6 +26,8 @@ namespace SMCONF
         _http._rootJsonPath = toml::find<string>(root, "rootJsonPath");
         _http._rootHtmlPath = toml::find<string>(root, "rootHtmlPath");
         _http._wsPath = toml::find<string>(root, "wsPath");
+        _http._keyPath = toml::find<string>(root, "keyName");
+        _http._perPath = toml::find<string>(root, "pemName");
     }
 
     void _ParseTimeZoneConf(const toml::value& root)

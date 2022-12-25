@@ -1,18 +1,21 @@
 #ifdef LIBUS_USE_QUIC
 
-#define _GNU_SOURCE
-#include <sys/socket.h>
+/* Todo: quic layer should not use bsd layer directly (sendmmsg) */
+#include "internal/networking/bsd.h"
 
 #include "quic.h"
 
-#include <errno.h>
+
 
 #include "lsquic.h"
 #include "lsquic_types.h"
 #include "lsxpack_header.h"
 
-/* This one is really only used to set inet addresses */
+/* Todo: remove these */
+#ifndef _WIN32
 #include <netinet/in.h>
+#include <errno.h>
+#endif
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -133,7 +136,7 @@ void on_udp_socket_data_client(struct us_udp_socket_t *s, struct us_udp_packet_b
         //printf("We received packet on port: %d\n", port);
 
         /* We build our address based on what the dest addr is */
-        struct sockaddr_storage local_addr = {};
+        struct sockaddr_storage local_addr = {0};
         if (ip_length == 16) {
             struct sockaddr_in6 *ipv6 = (struct sockaddr_in6 *) &local_addr;
 
@@ -195,7 +198,7 @@ void on_udp_socket_data(struct us_udp_socket_t *s, struct us_udp_packet_buffer_t
         //printf("We received packet on port: %d\n", port);
 
         /* We build our address based on what the dest addr is */
-        struct sockaddr_storage local_addr = {};
+        struct sockaddr_storage local_addr = {0};
         if (ip_length == 16) {
             struct sockaddr_in6 *ipv6 = (struct sockaddr_in6 *) &local_addr;
 
@@ -222,48 +225,22 @@ void on_udp_socket_data(struct us_udp_socket_t *s, struct us_udp_packet_buffer_t
 
 }
 
-int send_packets_out_slow(void *ctx, const struct lsquic_out_spec *specs, unsigned n_specs) {
-    us_quic_socket_context_t *context = ctx;
-    
-    /* We need to partition outgoing packets per udp_socket */
-    int sent = 0;
-    for (int i = 0; i < n_specs; i++) {
-        struct msghdr hdr = {};
+/* Let's use this on Windows and macOS where it is not defined (todo: put in bsd.h) */
+#ifndef UIO_MAXIOV
+#define UIO_MAXIOV 1024
 
-        hdr.msg_name       = (void *) specs[i].dest_sa;
-        hdr.msg_namelen    = (AF_INET == specs[i].dest_sa->sa_family ?
-                                            sizeof(struct sockaddr_in) :
-                                            sizeof(struct sockaddr_in6)),
-        hdr.msg_iov        = specs[i].iov;
-        hdr.msg_iovlen     = specs[i].iovlen;
-        hdr.msg_flags      = 0;
-
-        struct us_udp_socket_t *udp_socket = (struct us_udp_socket_t *) specs[i].peer_ctx;
-
-        //printf("Sending a packet out on udp socket: %p!\n", udp_socket);
-
-        int fd = us_poll_fd((struct us_poll_t *) udp_socket);
-
-        //printf("Sending on fd: %d\n", fd);
-
-        int ret = sendmsg(fd, &hdr, 0);
-        if (ret == -1) {
-            /* Something did not play along, break before this one */
-            printf("backpressure\n");
-            exit(0);
-            return i;
-        }
-    }
-
-    /* If we come here all specs have been sent */
-    return n_specs;
-}
+#ifndef _WIN32
+struct mmsghdr {
+    struct msghdr msg_hdr;  /* Message header */
+    unsigned int  msg_len;  /* Number of bytes transmitted */
+};
+#endif
+#endif
 
 /* Server and client packet out is identical */
 int send_packets_out(void *ctx, const struct lsquic_out_spec *specs, unsigned n_specs) {
+#ifndef _WIN32
     us_quic_socket_context_t *context = ctx;
-
-    //printf("About to send %d datagrams\n", n_specs);
 
     /* A run is at most UIO_MAXIOV datagrams long */
     struct mmsghdr hdrs[UIO_MAXIOV];
@@ -276,7 +253,7 @@ int send_packets_out(void *ctx, const struct lsquic_out_spec *specs, unsigned n_
     for (int i = 0; i < n_specs; i++) {
         /* Send this run if we need to */
         if (run_length == UIO_MAXIOV || specs[i].peer_ctx != last_socket) {
-            int ret = sendmmsg(us_poll_fd((struct us_poll_t *) last_socket), hdrs, run_length, 0);
+            int ret = bsd_sendmmsg(us_poll_fd((struct us_poll_t *) last_socket), hdrs, run_length, 0);
             if (ret != run_length) {
                 if (ret == -1) {
                     printf("unhandled udp backpressure!\n");
@@ -310,7 +287,7 @@ int send_packets_out(void *ctx, const struct lsquic_out_spec *specs, unsigned n_
 
     /* Send last run */
     if (run_length) {
-        int ret = sendmmsg(us_poll_fd((struct us_poll_t *) last_socket), hdrs, run_length, 0);
+        int ret = bsd_sendmmsg(us_poll_fd((struct us_poll_t *) last_socket), hdrs, run_length, 0);
         if (ret == -1) {
             printf("backpressure! A\n");
             return sent;
@@ -325,6 +302,8 @@ int send_packets_out(void *ctx, const struct lsquic_out_spec *specs, unsigned n_
     }
 
     //printf("Returning %d\n", n_specs);
+
+#endif
 
     return n_specs;
 }
@@ -374,7 +353,7 @@ lsquic_stream_ctx_t *on_new_stream(void *stream_if_ctx, lsquic_stream_t *s) {
     // to get that ext_size set in listen/connect calls, back here.
     // todo: hardcoded for now
 
-    int ext_size = 128;
+    int ext_size = 256;
 
     void *ext = malloc(ext_size);
     // yes hello
@@ -461,7 +440,7 @@ us_quic_socket_t *us_quic_stream_socket(us_quic_stream_t *s) {
     return (us_quic_socket_t *) lsquic_stream_conn((lsquic_stream_t *) s);
 }
 
-#include <errno.h>
+//#include <errno.h>
 
 
 // only for servers?
@@ -482,7 +461,7 @@ static void on_read(lsquic_stream_t *s, lsquic_stream_ctx_t *h) {
 
     // all of this logic should be moved to uws and WE here should only hand over the data
 
-    char temp[4096] = {};
+    char temp[4096] = {0};
     int nr = lsquic_stream_read(s, temp, 4096);
 
     // emit on_end when we receive fin, regardless of whether we emitted data yet
@@ -1039,7 +1018,7 @@ us_quic_socket_t *us_quic_socket_context_connect(us_quic_socket_context_t *conte
 
 
     // localhost 9004 ipv4
-    struct sockaddr_storage storage = {};
+    struct sockaddr_storage storage = {0};
     // struct sockaddr_in *addr = (struct sockaddr_in *) &storage;
     // addr->sin_addr.s_addr = 16777343;
     // addr->sin_port = htons(9004);
@@ -1062,7 +1041,7 @@ us_quic_socket_t *us_quic_socket_context_connect(us_quic_socket_context_t *conte
 
 
     // let's call ourselves an ipv6 client and see if that solves anything
-    struct sockaddr_storage local_storage = {};
+    struct sockaddr_storage local_storage = {0};
     // struct sockaddr_in *local_addr = (struct sockaddr_in *) &local_storage;
     // local_addr->sin_addr.s_addr = 16777343;
     // local_addr->sin_port = htons(ephemeral);

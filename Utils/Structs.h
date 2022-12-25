@@ -95,6 +95,8 @@ class HttpConfig
     string _rootJsonPath{"http"};
     string _resRootPath{"dist"};
     string _wsPath{"ws"};
+    string _perPath{ "" };
+    string _keyPath{ "" };
 };
 
 class TimeZoneConfig

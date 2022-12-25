@@ -36,49 +36,12 @@ namespace SMNetwork
 	class NETWORKINTERFACE_EXPORT Https
 	{
 	public:
-		static Https& getDefaultInst();
 		static map<string, string>& getRespHeaders(HtmlBodyType type);
 		static HtmlBodyType getRespBodyType(const string& context);
 		static HtmlBodyType getRespBodyType(string_view context);
 		static void sInit();
-	public:
-		Https();
-		Https(const Https&) = delete;
-		Https(const Https&&) = delete;
-		/**
-		 * @brief init http server instance
-		 *
-		 * @param httproot local http resource path
-		 * @param wsroot websocket root path
-		 */
-		bool init(string htmlroot, string jsonrooot, string wsroot);
-		/**
-		 * @brief start http server instance, this call will block at httpserver.run
-		 *
-		 * @return true
-		 * @return false
-		 */
-		bool startServer();
-
-	protected:
-		bool _isAuthed(string_view url, const string& token);
-		bool _initRes();
-		bool _initHttp(HtmlBodyType bodytype);
-		bool _initHtml();
-		bool _initJson();
-		bool _initWs();
-
-	private:
-		uWS::TemplatedApp<useSSL>* _app = nullptr;
-		uWS::Loop* _loop = nullptr;
-		uWS::Loop* _loopinit = nullptr;
-		std::set<uWS::HttpResponse<useSSL>*> _abortReps;
-
-		string _httpRoot;
-		string _jsonRoot;
-		string _wsRoot;
+	
 	};
 }
 
-#define DEFHTTP (SMNetwork::Https::getDefaultInst())
 

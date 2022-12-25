@@ -23,7 +23,7 @@ ELSEIF(CMAKE_SYSTEM_NAME MATCHES "Darwin")
     ADD_LIBRARY(hotupdate  ${A} )
 ENDIF(CMAKE_SYSTEM_NAME MATCHES "Windows")
 
-target_link_libraries(hotupdate  PRIVATE uSockets2  PRIVATE Utils PRIVATE configs PRIVATE spdlog::spdlog PRIVATE efsw::efsw)
+target_link_libraries(hotupdate    PRIVATE Utils PRIVATE configs PRIVATE spdlog::spdlog PRIVATE efsw::efsw)
 
 generate_export_header(hotupdate EXPORT_FILE_NAME ${CMAKE_CURRENT_SOURCE_DIR}/../inc/os/${CMAKE_SYSTEM_NAME}/export_flags/${PROJECT_NAME}Export.h)
 

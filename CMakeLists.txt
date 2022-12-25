@@ -69,7 +69,7 @@ add_subdirectory(database)
 add_subdirectory(networkinterface)
 add_subdirectory(hotupdate)
 add_subdirectory(Utils)
-add_subdirectory(uSockets2)
+#add_subdirectory(uSockets2)
 add_subdirectory(hashlibrary)
 
 if(PROJECT_IS_TOP_LEVEL)

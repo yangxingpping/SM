@@ -217,6 +217,8 @@ void ROUTER_QUERY(F func, AssType asstype, Inst* inst)
 	SMNetwork::addRouterJson(SMNetwork::combinePath(inst->_mainc, asstype), lambdax);
 }
 
+#define ROUTER_NEED_DBREQ_DB_JSON2(func, ParamterType, DBParamterType, ReturnType, AssTypeVar, AssDBTypeVar) {\
+
 /**
  * @brief router unifrom db request , send db request to database proxy, convert db rep, return rep
  *
