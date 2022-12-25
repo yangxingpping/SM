@@ -1,3 +1,3 @@
 #pragma once
 
-const static int useSSL = 0;
+const static int useSSL = 1;
