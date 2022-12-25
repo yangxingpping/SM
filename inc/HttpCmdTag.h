@@ -174,7 +174,7 @@ void ROUTER_QUERY(F func, AssType asstype, Inst* inst)
 	using ReturnType = boost::callable_traits::return_type_t<F>;
 	using Args = boost::callable_traits::args_t<F>;
 
-	auto lambdax = make_shared<RouterFuncType>([](string& msg, string token) -> asio::awaitable<RouterFuncReturnType> {
+	auto lambdax = make_shared<RouterFuncType>([=](string& msg, string token) -> asio::awaitable<RouterFuncReturnType> {
 		RouterFuncReturnType strret;
 	using CommFuncTypes = decltype(cdr(std::declval<Args>()));
 	CommFuncTypes args;
