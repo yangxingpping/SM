@@ -148,6 +148,7 @@ namespace SMNetwork {
 	bool  addRouterTrans(MainCmd mainc, int assc, ConRouterType func)
 	{
 		bool bret{ false };
+		SPDLOG_INFO("add router for main cmd {}", magic_enum::enum_name(mainc));
 		if (_routersTrans == nullptr)
 		{
 			_routersTrans = make_shared<TransRoutersType>();
