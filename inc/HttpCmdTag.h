@@ -16,6 +16,7 @@
 #include "MainCmdTag.h"
 #include "enums.h"
 #include "Utils.h"
+#include "reqreps.h"
 #include "networkinterface.h"
 #include "asio/awaitable.hpp"
 #include "IOContextManager.h"
