@@ -18,7 +18,7 @@ namespace SMDB
     {
     public:
         BEGIN_ROUTER_MAP_DB(MainCmd::DBQuery);
-        ROUTER_DB_TRANS_NO_PRE_POST(&CommonDBProcess::sregist, RegistReq, RegistRep, AssDB::Regist);
+        ROUTER_DB3(&CommonDBProcess::sregist, AssDB::Regist);
         ROUTER_DB3(&CommonDBProcess::slogin,  AssDB::Login);
         ROUTER_DB3(&CommonDBProcess::sgetAllUsers, AssDB::getAllUsers);
         ROUTER_DB3(&CommonDBProcess::saddSysAdmin, AssDB::AddSysAdmin);

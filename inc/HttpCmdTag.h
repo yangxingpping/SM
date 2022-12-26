@@ -14,6 +14,7 @@
 #include "magic_enum.hpp"
 #include "database.h"
 #include "MainCmdTag.h"
+#include "reqreps.h"
 #include "enums.h"
 #include "Utils.h"
 #include "networkinterface.h"
