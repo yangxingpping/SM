@@ -8,7 +8,7 @@
 #include "boost/callable_traits/args.hpp"
 #include "commUsing.h"
 
-#include "Utils.h"
+#include "../Utils/Utils.h"
 
 #include <string>
 #include <string_view>
@@ -129,7 +129,7 @@ cdr(T&& t)
 
 
 template<typename Func>
-auto unpackArgs(string_view msg) -> tuple_cat_t<std::tuple<bool>,boost::callable_traits::args_t<Func>>::type
+auto unpackArgs(string_view msg) -> typename tuple_cat_t<std::tuple<bool>,boost::callable_traits::args_t<Func>>::type
 {
 	bool bret{ true };
 	using Args = boost::callable_traits::args_t<Func>;
