@@ -28,6 +28,12 @@ struct Arg2
 };
 REFLECTION(Arg2, _b);
 
+class demo1
+{
+public:
+	int add(Arg1 a, Arg1 b) { return a._a + b._a; }
+};
+
 template<typename F>
 void func(F func)
 {
@@ -39,11 +45,6 @@ void func(F func)
 	{
 		size_t offset{ 0 };
 		auto lenx = std::tuple_size<Args>::value;
-		/*for (int i = 0; i < lenx; ++i)
-		{
-			uint32_t paramlen = unpackuint32(string_view(msg.data + offset, msg.length() - offset));
-			
-		}*/
 	};
 	Arg1 a{ 1 };
 	Arg2 b{ 2 };
@@ -53,7 +54,7 @@ void func(F func)
 	int i = 0;
 }
 
-int add(Arg1 a, Arg2 b)
+int add2(Arg1 a, Arg2 b)
 {
 	return a._a + b._b;
 }
@@ -62,6 +63,37 @@ TEST_CASE("test parse and unparse message", "Utils")
 {
 	using namespace SMUtils;
 	
+}
+
+TEST_CASE("is member pointer", "class member function")
+{
+	REQUIRE(std::is_member_function_pointer<decltype(& demo1::add)>::value);
+}
+
+TEST_CASE("normal function", "is member pointer")
+{
+	REQUIRE(!std::is_member_function_pointer<decltype(&add2)>::value);
+}
+
+TEST_CASE("pack and unpack args", "global function with 2 param")
+{
+
+	Arg1 arg1{ 1 };
+	Arg2 arg2{ 2 };
+	string ret;
+	packArgs(ret, arg1, arg2);
+	auto ret2 = unpackArgs<decltype(add2)>(string_view(ret.data(), ret.length()));
+	auto [o1, o2, o3] = ret2;
+	REQUIRE(o1 == true);
+	REQUIRE(o2._a == arg1._a);
+	REQUIRE(o3._b == arg2._b);
+}
+
+TEST_CASE("tuple operate", "tuple cat")
+{
+	using S1 = tuple_cat_t<std::tuple<bool>, boost::callable_traits::args_t<decltype(&add2)>>::type;
+	using S2 = tuple<bool, Arg1, Arg2>;
+	REQUIRE(std::is_same<S1, S2>::value);
 }
 
 TEST_CASE("test tuple unpack", "Utils")

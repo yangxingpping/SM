@@ -340,7 +340,7 @@ namespace SMUtils
 	{
 		uint32_t strlen = 0;
 		auto ret = unpackuint32(msg, strlen);
-		if (!std::get<0>(ret) || strlen+sizeof(uint32_t)>=msg.length())
+		if (!std::get<0>(ret) || strlen+sizeof(uint32_t)>msg.length())
 		{
 			return string_view("");
 		}
