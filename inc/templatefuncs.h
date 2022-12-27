@@ -3,8 +3,12 @@
 
 #include "iguana/json.hpp"
 #include "spdlog/spdlog.h"
-
+#include "boost/callable_traits/function_type.hpp"
+#include "boost/callable_traits/return_type.hpp"
+#include "boost/callable_traits/args.hpp"
 #include "commUsing.h"
+
+#include "Utils.h"
 
 #include <string>
 #include <string_view>
@@ -22,6 +26,32 @@ using std::string_view;
 	{\
 		SPDLOG_WARN("std return unexpected error ");\
 	}
+
+//https://stackoverflow.com/questions/53394100/concatenating-tuples-as-types
+//template<typename ... input_t>
+//using tuple_cat_t =
+//decltype(std::tuple_cat(
+//	std::declval<input_t>()...
+//));
+
+template <class, class>
+struct tuple_cat_t;
+template <class... First, class... Second>
+struct tuple_cat_t<std::tuple<First...>, std::tuple<Second...>> {
+	using type = std::tuple<First..., Second...>;
+};
+
+
+template <typename T, typename ...>
+struct tuple_cat_t2
+{
+	using type = T;
+};
+
+template <typename ... Ts1, typename ... Ts2, typename ... Ts3>
+struct tuple_cat_t2<std::tuple<Ts1...>, std::tuple<Ts2...>, Ts3...>
+	: public tuple_cat_t2<std::tuple<Ts1..., Ts2...>, Ts3...>
+{ };
 
 template<class T>
 RouterFuncReturnType my_to_string(T& t)
@@ -82,4 +112,56 @@ cdr(T&& t)
 {
 	return cdr_impl(std::forward<T>(t),
 		std::make_index_sequence<std::tuple_size<T>::value>{});
+}
+
+
+//template<typename Func, typename std::enable_if<std::is_member_function_pointer<Func>::value, Func>::type=0>
+//bool unpackArgs(string_view msg, decltype(cdr(std::declval<boost::callable_traits::args_t<Func>>()))& args)
+//{
+//	return true;
+//}
+
+//template<typename Func>
+//bool unpackArgs(string_view msg, boost::callable_traits::args_t<Func>& args)
+//{
+//	return true;
+//}
+
+
+template<typename Func>
+auto unpackArgs(string_view msg) -> tuple_cat_t<std::tuple<bool>,boost::callable_traits::args_t<Func>>::type
+{
+	bool bret{ true };
+	using Args = boost::callable_traits::args_t<Func>;
+	Args args;
+	size_t offset{ 0 };
+	int argIndex{ 0 };
+	SMUtils::for_each(args, [&](auto& arg) {
+		auto strparam = SMUtils::unpackstring(string_view(msg.data()+offset, msg.length()-offset));
+	if (!my_json_parse_from_string(arg, strparam))
+	{
+		bret = false;
+		SPDLOG_WARN("parse the {} param failed", argIndex);
+		return;
+		}
+	offset += (strparam.length() + sizeof(uint32_t));
+	++argIndex;
+		});
+	return std::tuple_cat(std::make_tuple(bret), args);
+	
+}
+
+template<typename Arg>
+void packArgs(string& ret, Arg& arg)
+{
+	auto strarg = my_to_string(arg);
+	ret += SMUtils::packstring(string_view(strarg->data(), strarg->length()));
+}
+
+template<typename Arg, typename... Args>
+void packArgs(string& ret, Arg& arg, Args... args)
+{
+	auto strarg = my_to_string(arg);
+	ret += SMUtils::packstring(string_view(strarg->data(), strarg->length()));
+	packArgs(ret, args...);
 }
