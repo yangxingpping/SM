@@ -4,13 +4,9 @@
 
 #include "DealAuth.h"
 #include "DealEcho.h"
-
-#include "PackDealerMainSub.h"
-#include "PackDealerNoHead.h"
-#include "PackDealerNoMain.h"
-
 #include "AsynRep.h"
 #include "SyncReq.h"
+#include "PackUnpackManager.h"
 
 #include "DBs.h"
 #include "conf.h"
@@ -96,38 +92,11 @@ namespace SMDB
 	{
         auto conftz = SMCONF::getTimeZoneConfig();
         assert(setDefaultTimeZone(conftz->_defaultTimeZone));
-        
+        assert(PUM->addPlatformPack(magic_enum::enum_integer(MainCmd::DBQuery), shared_ptr<SMNetwork::PlatformPackInterface>(new SMNetwork::MainAssPlatPack(magic_enum::enum_integer(MainCmd::DBQuery)))));
         if (dbnode)
         {
             DBs::getInst().init();
         }
-	}
-
-	void asyn_nng_demo()
-	{
-        auto serverfunc = std::make_shared<RouterFuncType>([](std::string& req, string token)->asio::awaitable<RouterFuncReturnType>
-            {
-                RouterFuncReturnType ret = std::make_shared<string>(string("fuck"));
-
-				co_return ret;
-			});
-
-		uint16_t portx = 998;
-
-		SMCONF::addRouterTrans(MainCmd::MainCmdBegin, 0, serverfunc);
-
-		shared_ptr<SMNetwork::PackDealerBase> ps = shared_ptr<SMNetwork::PackDealerBase>(new SMNetwork::PackDealerNoHead(ChannelType::EchoServer));
-		shared_ptr<SMNetwork::PackDealerBase> pc = shared_ptr<SMNetwork::PackDealerBase>(new SMNetwork::PackDealerNoHead(ChannelType::EchoClient));
-
-		shared_ptr<SMNetwork::AsynRep> rep =  make_shared<SMNetwork::AsynRep>("127.0.0.1", portx, ChannelType::EchoServer);
-		rep->init(ServeMode::SBind, ps);
-
-        shared_ptr < SMNetwork::SyncReq> req = make_shared<SMNetwork::SyncReq>("127.0.0.1", portx, ChannelType::EchoClient);
-		req->init(ServeMode::SConnect, pc);
-
-		std::string strreq{ "fuck.world" };
-		auto strrep = req->reqrep(strreq, 0);
-		int i = 1;
 	}
 
 }

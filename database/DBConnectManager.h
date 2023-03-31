@@ -1,4 +1,10 @@
-
+/*****************************************************************//**
+ * \file   DBConnectManager.h
+ * \brief  this class is used to access database
+ *
+ * \author alqaz
+ * \date   March 2022
+ *********************************************************************/
 #pragma once
 
 #include "databaseExport.h"

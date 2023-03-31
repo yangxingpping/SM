@@ -73,7 +73,7 @@ namespace SMNetwork
 		bool pack(span<char> dst) override;
 		bool unpack(string_view src) override;
 		size_t len() override;
-		PlatformPackInterface* clone() override;
+		virtual PlatformPackInterface* clone() override;
 	private:
 		uint32_t _main;
 		uint32_t _ass;
@@ -89,7 +89,7 @@ namespace SMNetwork
 		bool pack(span<char> dst) override;
 		bool unpack(string_view src) override;
 		size_t len() override;
-		PlatformPackInterface* clone() override;
+		virtual PlatformPackInterface* clone() override;
 	private:
 		uint32_t _main;
 	};

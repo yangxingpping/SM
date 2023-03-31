@@ -86,6 +86,7 @@ namespace SMNetwork
     NETWORKINTERFACE_EXPORT void  asyn_nng_demo();
 
 	NETWORKINTERFACE_EXPORT PrepareReqRepRecver prepareReqRep(uint32_t sock, uint32_t msgno);
+	NETWORKINTERFACE_EXPORT bool FinishReqRepRecver(uint32_t sock, uint32_t msgno);
 
 	NETWORKINTERFACE_EXPORT bool prepareSignalRecvNetRep(uint32_t sock, uint32_t msgno);
 

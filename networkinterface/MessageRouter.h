@@ -42,6 +42,8 @@ namespace SMNetwork
 
 		oneshot::receiver<bool> prepareSignalSendComplete(uint32_t sock, uint32_t msgno);
 		oneshot::receiver<shared_ptr<NMessage>> prepareSignalRecvNetRep(uint32_t sock, uint32_t msgno);
+
+
 		bool notifyRecvNetRep(uint32_t sock, shared_ptr<NMessage> msg);
 		bool notifyRecvAppRep(uint32_t sock, shared_ptr<NMessage> msg);
 		bool notifySendNetComplete(uint32_t sock, uint32_t msgno, bool flag);

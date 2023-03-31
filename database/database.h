@@ -22,5 +22,4 @@ namespace SMDB
     DATABASE_EXPORT void  addBeforeQuery(shared_ptr<BeforeQueryFuncType> func);
     DATABASE_EXPORT void  addAfterQuery(shared_ptr < AfterQueryFuncType> func);
     DATABASE_EXPORT void  init(bool dbnode=false);
-    DATABASE_EXPORT void  asyn_nng_demo();
 }

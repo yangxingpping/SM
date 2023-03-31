@@ -27,6 +27,7 @@ namespace SMNetwork
 	asio::awaitable<bool> TcpChannelImpl::sendPack(string_view src, uint32_t no)
 	{
 		bool bret{ false };
+		SPDLOG_INFO("send platform message data length {} data {}", src.length(), string_view(src.begin() + 8, src.end()));
 		SMNetwork::StreamNetDealer _netpack;
 		string strhead(_netpack.HeadLen(), '\0');
 		_netpack.pack(no, src.length(), span(strhead.begin(), _netpack.HeadLen()));
@@ -85,6 +86,7 @@ namespace SMNetwork
 			END_ASIO;
 			if (len > 0)
 			{
+				tryIndex = 0;
 				_bRecv->append(_recvasio.begin(), _recvasio.begin() + len);
 			}
 			else
@@ -92,6 +94,7 @@ namespace SMNetwork
 				SPDLOG_WARN("current recv data len {}", len);
 			}
 		}
+		tryIndex = 0;
 		if (_bRecv->length() >= _netpack.HeadLen()) //unpack net head
 		{
 			if (_netpack.unpack(req, string_view(_bRecv->begin(), _bRecv->end())))
@@ -102,9 +105,11 @@ namespace SMNetwork
 					BEGIN_ASIO;
 					len = co_await _sock->async_read_some(asio::buffer(_recvasio), asio::use_awaitable);
 					END_ASIO;
+					SPDLOG_INFO("current recv binary data length {}", len);
 					if (len > 0)
 					{
 						_bRecv->append(_recvasio.begin(), _recvasio.begin() + len);
+						tryIndex = 0;
 					}
 				}
 				if (_bRecv->length() >= _netpack.HeadLen() + _netpack.Len())
@@ -117,6 +122,10 @@ namespace SMNetwork
 					_bRecvMsg = std::move(_bRecv);
 					_bRecv = std::move(tempswap);
 					co_return std::make_tuple(_netpack.getNo(), make_shared<string>(_bRecvMsg->data() + _netpack.HeadLen(), _bRecvMsg->length() - _netpack.HeadLen()));
+				}
+				else
+				{
+					SPDLOG_WARN("recv buf length {}, need length in net head is {}", _bRecv->length(), _netpack.Len());
 				}
 			}
 		}

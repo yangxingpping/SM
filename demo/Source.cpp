@@ -417,7 +417,7 @@ int main(int argc, char* argv[])
 
 	//test_zoned_time();
 
-	std::istringstream ss{ "2023-01-22" };
+	std::istringstream ss{ "2022-06-22" };
 	date::sys_days tp;
 #ifdef _WIN32
 	ss >> parse("%F", tp);
@@ -453,7 +453,6 @@ int main(int argc, char* argv[])
 	test_nng_asyn_reqrep_asio();
 	//test_asio_tcp_client_timeout();
 	//test_nng_asyn_asio2();
-	//SMNetwork::asyn_nng_demo();
 	asio::co_spawn(*IOCTX, [=, &biorun]() -> asio::awaitable<void> {
 		SPDLOG_INFO("last spawn for ioctx");
 		biorun = false;

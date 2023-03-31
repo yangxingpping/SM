@@ -9,6 +9,7 @@
 #include "asio/detached.hpp"
 #include "asio/experimental/concurrent_channel.hpp"
 #include "taskflow/taskflow.hpp"
+#include "spdlog/fmt/bin_to_hex.h"
 #include "magic_enum.hpp"
 #include "enums.h"
 #include "Routers.h"
@@ -148,6 +149,7 @@ class ChannelCombine
         auto bflag = recvers._r1.get();
         if (!bflag)
         {
+            assert(SMNetwork::FinishReqRepRecver(_sock->sockNo(), no));
             co_return ret;
         }
         //start wait rep
@@ -158,6 +160,8 @@ class ChannelCombine
             SPDLOG_WARN("req msg No.{} rep failed", no);
         }
         ret = vv->body();
+        assert(SMNetwork::FinishReqRepRecver(_sock->sockNo(), no));
+        SPDLOG_INFO("request {} response {}", *req, *ret);
         co_return ret;
     }
 

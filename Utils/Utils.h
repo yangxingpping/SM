@@ -30,7 +30,10 @@ enum class ServeType : uint64_t
 	WebSocketText = HttpGet << 3,
 };
 
-
+/**
+ * @brief will be replace by use boost endian module
+ * 
+ */
 
 namespace SMUtils
 {

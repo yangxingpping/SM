@@ -15,6 +15,13 @@ namespace SMHotupdate
 	{
 		bool bret{ true };
 		IOContextManager::sInit(ioc);
+		if (_dendioctxinitfuncs != nullptr)
+		{
+			for (auto& func : *_dendioctxinitfuncs)
+			{
+				(*func.second)();
+			}
+		}
 		return bret;
 	}
 

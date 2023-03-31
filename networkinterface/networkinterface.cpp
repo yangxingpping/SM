@@ -141,6 +141,11 @@ namespace SMNetwork {
 		return ret;
 	}
 
+	bool FinishReqRepRecver(uint32_t sock, uint32_t msgno)
+	{
+		return MR->finishReqRep(sock, msgno);
+	}
+
 	bool notifySendNetComplete(uint32_t sock, uint32_t msgno, bool flag)
 	{
 		return MR->notifySendNetComplete(sock, msgno, flag);

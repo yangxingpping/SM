@@ -1,13 +1,13 @@
 #pragma once
-#include "concurrentqueue/concurrentqueue.h"
-#include "IOContextManager.h"
-#include "TcpChannel.h"
-#include "MessageSplitFuncs.h"
+#include <list>
+#include "ChannelCombine.h"
+#include "TcpChannelImp.h"
+#include "conf.h"
 #include "asio/redirect_error.hpp"
 #include "asio/awaitable.hpp"
 #include "asio/error.hpp"
-
 #include "ManageTcpChannel.h"
+#include "LocalNetManager.h"
 
 using asio::use_awaitable;
 using asio::redirect_error;
@@ -27,16 +27,12 @@ using std::string;
 using std::shared_ptr;
 using std::make_shared;
 using std::vector;
-
-/*
-template <MessageDealer T, ChannelType t>
-class TcpClient;
-*/
+using std::list;
 
 namespace SMNetwork
 {
 
-template <ChannelType t, NetHeadType nethead, ChannelIsInitiative isInitiative>
+template <ChannelType t, NetHeadType nethead, ChannelModeC modec>
 class TcpClientCombine
 {
   public:
@@ -46,32 +42,16 @@ class TcpClientCombine
     {
     }
 
-    ChannelIsInitiative IsInitiativeChannel()
+    ChannelModeC IsInitiativeChannel()
     {
-        return isInitiative;
+        return modec;
     }
 
-
-    asio::awaitable<void> start(shared_ptr<PackDealerBase> packdealer) 
+    asio::awaitable<ChannelCombine<SMNetwork::TcpChannelImpl, MainCmd>*> getChannel()
     {
-        while(!_bstop)
-        {
-            BEGIN_ASIO;
-            auto channel = co_await getChannel();
-            if (channel != nullptr)
-            {
-                co_await channel->_serverEntry(channel, packdealer);
-            }
-            END_ASIO;
-        }
-        co_return;
-    }
-
-    asio::awaitable<shared_ptr<TcpChannel<t, nethead>>> getChannel()
-    {
-        shared_ptr<TcpChannel<t, nethead>> retchannel;
+        ChannelCombine<SMNetwork::TcpChannelImpl, MainCmd>* retchannel = nullptr;
         string addr = _ip + ":" + std::to_string(_port);
-        if (!_channelpool.try_dequeue(retchannel))
+        if (_channelpool.empty())
         {
             auto timeoutmillsecond = SMCONF::getTransportConfig()->_timeout;
             if (timeoutmillsecond == 0)
@@ -84,13 +64,20 @@ class TcpClientCombine
             {
 				SPDLOG_INFO("start get tcp connect channel {} from addr {}", magic_enum::enum_name(t), addr);
 				asio::ip::tcp::endpoint endpoint(asio::ip::address::from_string(_ip), _port);
-				shared_ptr<asio::ip::tcp::socket> sock = make_shared<asio::ip::tcp::socket>(IOCTX);
+				unique_ptr<asio::ip::tcp::socket> sock = make_unique<asio::ip::tcp::socket>(*IOCTX);
                 BEGIN_ASIO;
 				co_await sock->async_connect(endpoint, asio::use_awaitable);
-				retchannel = make_shared<TcpChannel<t, nethead>>(sock);
-				break;
+                uint32_t sockno = SMNetwork::newSockNo();
+                retchannel =  LNM->createTcpChannel(move(sock), ChannelModeC::Initiative, MainCmd::DBQuery);
+                retchannel->start();
+                break;
                 END_ASIO;
             }
+        }
+        else
+        {
+            retchannel = _channelpool.front();
+            _channelpool.pop_front();
         }
         if (retchannel == nullptr)
         {
@@ -99,16 +86,18 @@ class TcpClientCombine
         co_return retchannel;
     }
 
-    void _returnChannel(shared_ptr<TcpChannel<t, nethead>> ch)
+    void _returnChannel(ChannelCombine<SMNetwork::TcpChannelImpl, MainCmd>* ch)
     {
-        if(ch)
-        _channelpool.enqueue(ch);
+        if (ch)
+        {
+            _channelpool.push_back(ch);
+        }
     }
 
     private:
     string _ip;
     uint16_t _port;
-    moodycamel::ConcurrentQueue<shared_ptr<TcpChannel<t, nethead>>> _channelpool;
+    list<ChannelCombine<SMNetwork::TcpChannelImpl, MainCmd>*> _channelpool;
 
     asio::ip::tcp::resolver::results_type _endpoints;
 

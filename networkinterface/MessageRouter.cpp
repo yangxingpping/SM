@@ -82,8 +82,9 @@ namespace SMNetwork
 
 	bool MessageRouter::finishReqRep(uint32_t sock, uint32_t msgno)
 	{
-		bool bret{ false };
-
+		bool bret{ true };
+		_sendCompleteSignals[sock].erase(msgno);
+		_netRepSignals[sock].erase(msgno);
 		return bret;
 	}
 
@@ -124,11 +125,14 @@ namespace SMNetwork
 	bool MessageRouter::notifyRecvNetRep(uint32_t sock, shared_ptr<NMessage> msg)
 	{
 		bool bret{ false };
+		SPDLOG_INFO("notify recv net resp for sock {} message no {}", sock, msg->No());
 		auto it = _netRepSignals[sock].find(msg->No());
 		if (it != _netRepSignals[sock].end())
 		{
+			BEGIN_ASIO;
 			it->second.send(msg);
 			bret = true;
+			END_ASIO;
 		}
 		return bret;
 	}
@@ -139,8 +143,10 @@ namespace SMNetwork
 		auto it = _appRepSignals[sock].find(msg->No());
 		if (it != _appRepSignals[sock].end())
 		{
+			BEGIN_ASIO;
 			it->second.send(msg);
 			bret = true;
+			END_ASIO;
 		}
 		return bret;
 	}
@@ -151,8 +157,10 @@ namespace SMNetwork
 		auto it = _sendCompleteSignals[sock].find(msgno);
 		if (it != _sendCompleteSignals[sock].end())
 		{
+			BEGIN_ASIO;
 			it->second.send(flag);
 			bret = true;
+			END_ASIO;
 		}
 		return bret;
 	}

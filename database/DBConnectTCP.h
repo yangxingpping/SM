@@ -1,7 +1,7 @@
 #pragma once
 #include "databaseExport.h"
 #include "enums.h"
-#include "../networkinterface/TcpClient.h"
+#include "../networkinterface/TcpClientCombine.h"
 #include "Utils.h"
 #include "nng/nng.h"
 #include "nng/protocol/reqrep0/req.h"
@@ -43,6 +43,7 @@ class DATABASE_EXPORT DBConnectTCP
     string _ip;
     uint16_t _port;
     int16_t _timeoutMiseconds = 5000;
-    shared_ptr<SMNetwork::TcpClient<ChannelType::DBClient, NetHeadType::FixPackLenPlaceHolder, ChannelIsInitiative::Initiative>> _client;
+    shared_ptr<SMNetwork::TcpClientCombine<ChannelType::DBClient, NetHeadType::FixPackLenPlaceHolder, ChannelModeC::Initiative>> _client;
+    MainCmd _mainc = MainCmd::DBQuery;
 };
 }

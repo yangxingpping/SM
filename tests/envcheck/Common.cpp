@@ -19,6 +19,7 @@
 #include "templatefuncs.h"
 #include "boost/callable_traits/return_type.hpp"
 #include "boost/callable_traits/args.hpp"
+#include "PackUnpackManager.h"
 #include <thread>
 #include <map>
 #include <optional>
@@ -61,9 +62,6 @@ void func(F func)
 	Arg2 b{ 2 };
 	string params = SMUtils::packstring(string_view(*my_to_string(a)));
 	params += SMUtils::packstring(string_view(*my_to_string(b)));
-
-	
-
 	int i = 0;
 }
 
@@ -94,6 +92,25 @@ public:
 
 };
 
+int main(int argc, char* argv[]) {
+	asio::io_context ioc;
+	SMHotupdate::sInit(&ioc);
+	SMNetwork::initNetwork();
+	auto plat = shared_ptr<SMNetwork::PlatformPackInterface>(new SMNetwork::MainAssPlatPack(magic_enum::enum_integer(MainCmd::Echo)));
+	assert(SMNetwork::addPlatformPack<MainCmd>(plat));
+	int result = Catch::Session().run(argc, argv);
+
+	// your clean-up...
+
+	return result;
+}
+
+TEST_CASE("erase with key not exist", "map")
+{
+	map<int, int> m;
+	m.erase(1);
+}
+
 TEST_CASE("oneshot", "use in map")
 {
 	map<int, map<int,oneshot::sender<void>>> signals;
@@ -112,10 +129,12 @@ TEST_CASE("oneshot with NMessage", "use in map")
 
 TEST_CASE("asio concurrent channel loop", "concurrent channel")
 {
+	bool bfinish{ false };
+	asio::io_context ioc;
 	using namespace asio::experimental;
-	concurrent_channel<void(asio::error_code, uint32_t, bool)> ch1(*IOCTX, 10);
-	asio::co_spawn(*IOCTX, [&]()->asio::awaitable<void> {
-		for (uint32_t i = 0; i < 64; ++i)
+	concurrent_channel<void(asio::error_code, uint32_t, bool)> ch1(ioc, 10);
+	asio::co_spawn(ioc, [&]()->asio::awaitable<void> {
+		for (uint32_t i = 0; i < 4; ++i)
 		{
 			co_await ch1.async_send(asio::error_code{}, i, i % 2 == 0 ? true : false, asio::use_awaitable);
 			auto [f, s] = co_await ch1.async_receive(asio::use_awaitable);
@@ -124,8 +143,12 @@ TEST_CASE("asio concurrent channel loop", "concurrent channel")
 		}
 		co_return;
 		}, asio::detached);
-	IOCTX->run();
-
+	BEGIN_ASIO;
+	auto runcount =ioc.run();
+	REQUIRE(runcount == 9);
+	bfinish = true;
+	END_ASIO;
+	REQUIRE(bfinish);
 }
 
 TEST_CASE("optional", "optional with bind")

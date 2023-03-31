@@ -87,7 +87,7 @@ namespace SMNetwork
 		return sizeof(_main) + sizeof(_ass);
 	}
 
-	SMNetwork::PlatformPackInterface* MainAssPlatPack::clone()
+	PlatformPackInterface* MainAssPlatPack::clone()
 	{
 		return new MainAssPlatPack(*this);
 	}
@@ -131,7 +131,7 @@ namespace SMNetwork
 		return 0;
 	}
 
-	SMNetwork::PlatformPackInterface* NoMainAssPlatPack::clone()
+	PlatformPackInterface* NoMainAssPlatPack::clone()
 	{
 		return new NoMainAssPlatPack(*this);
 	}
@@ -181,6 +181,7 @@ namespace SMNetwork
 	{
 		shared_ptr<PlatformPackInterface> ret{nullptr};
 		auto it = _platPacks.find(mainc);
+		assert(it != _platPacks.end());
 		if (it != _platPacks.end())
 		{
 			ret = shared_ptr<PlatformPackInterface>(it->second->clone());

@@ -1,4 +1,15 @@
 #pragma once
+/**
+ * @file Https.h
+ * @author alqaz (alqaz@outlook.com)
+ * @brief class for manage http service node. function init(...) and startServer(...) shoud call at the same thread as
+	uWesocket implement.
+ * @version 0.1
+ * @date 2022-01-27
+ *
+ * @copyright Copyright (c) 2022
+ *
+ */
 
 #include "consts.h"
 #include "networkinterfaceExport.h"
