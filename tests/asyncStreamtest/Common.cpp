@@ -1,23 +1,18 @@
-
-
 #include <memory>
 #include <iostream>
 #include <thread>
 #include <fstream>
 #include <filesystem>
-
-
-
 #include "asio/signal_set.hpp"
 #include "hotupdate.h"
+#include "TransCmdTag.h"
+#include "HttpCmdTag.h"
 #include "fmt/format.h"
 #include "asio/co_spawn.hpp"
 #include "asio/detached.hpp"
 #include "asio/ip/tcp.hpp"
 #include "asio/redirect_error.hpp"
 #include "asio/use_awaitable.hpp"
-#include "HttpCmdTag.h"
-#include "TransCmdTag.h"
 #include "FileOp.h"
 #include "catch.hpp"
 

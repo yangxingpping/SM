@@ -17,7 +17,7 @@ AUX_SOURCE_DIRECTORY(. A)
 
 add_executable(envcheck ${A} ${B})
 
-target_link_libraries(envcheck PUBLIC networkinterface PRIVATE OpenSSL::SSL OpenSSL::Crypto PRIVATE hotupdate PRIVATE nng::nng PUBLIC configs PUBLIC Utils PRIVATE Catch2::Catch2 Catch2::Catch2WithMain)
+target_link_libraries(envcheck PUBLIC networkinterface PRIVATE OpenSSL::SSL OpenSSL::Crypto PRIVATE database PRIVATE hotupdate PRIVATE nng::nng PUBLIC configs PUBLIC Utils PRIVATE Catch2::Catch2 Catch2::Catch2WithMain)
 
 
 set_target_properties(envcheck PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/config")

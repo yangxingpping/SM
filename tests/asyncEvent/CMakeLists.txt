@@ -16,7 +16,7 @@ AUX_SOURCE_DIRECTORY(. A)
 
 add_executable(asyncEvent ${A})
 
-target_link_libraries(asyncEvent PRIVATE Catch2::Catch2 Catch2::Catch2WithMain PRIVATE hashlibrary    PRIVATE Utils PRIVATE configs PRIVATE networkinterface PRIVATE spdlog::spdlog PRIVATE hotupdate)
+target_link_libraries(asyncEvent PRIVATE Catch2::Catch2 Catch2::Catch2WithMain PRIVATE hashlibrary PRIVATE database PRIVATE Utils PRIVATE configs PRIVATE networkinterface PRIVATE spdlog::spdlog PRIVATE hotupdate)
 
 
 set_target_properties(asyncEvent PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/config")

@@ -17,7 +17,7 @@ AUX_SOURCE_DIRECTORY(. A)
 
 add_executable(asyncStreamtest ${A} ${B})
 
-target_link_libraries(asyncStreamtest PRIVATE Catch2::Catch2 Catch2::Catch2WithMain PRIVATE hashlibrary    PRIVATE Utils PRIVATE configs PRIVATE networkinterface PRIVATE spdlog::spdlog PRIVATE hotupdate)
+target_link_libraries(asyncStreamtest PRIVATE Catch2::Catch2 Catch2::Catch2WithMain PRIVATE hashlibrary PRIVATE database PRIVATE Utils PRIVATE configs PRIVATE networkinterface PRIVATE spdlog::spdlog PRIVATE hotupdate)
 
 
 set_target_properties(asyncStreamtest PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/config")
