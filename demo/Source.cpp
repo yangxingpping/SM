@@ -9,7 +9,6 @@
 #include <chrono>
 #include "magic_enum.hpp"
 #include "DBManager.h"
-#include "networkinterface.h"
 #include "socket/TcpClient.h"
 #include "socket/TcpServer.h"
 #include "DBTcp.h"
@@ -31,8 +30,6 @@
 #include "nng/protocol/reqrep0/req.h"
 #include "nng/protocol/reqrep0/rep.h"
 #include "nng/supplemental/util/platform.h"
-
-#include "database.h"
 
 #ifdef OS_WIN
 #include <windows.h>

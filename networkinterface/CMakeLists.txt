@@ -15,7 +15,7 @@ source_group("IncComm" FILES ${COMMN_HEADER})
 include_directories(../conf ../inc ../Utils ../hotupdate ./nng ./socket)
 
 AUX_SOURCE_DIRECTORY(. A)
-aux_source_directory(./nng B)
+aux_source_directory(./nngs B)
 aux_source_directory(./socket C)
 AUX_SOURCE_DIRECTORY(./dealers D)
 
