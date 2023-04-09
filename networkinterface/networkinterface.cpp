@@ -8,16 +8,18 @@
 #include "jwt-cpp/jwt.h"
 #include "Configs.h"
 #include "MessageRouter.h"
+#include "PackUnpackManager.h"
 #include "coros.h"
 #include "templatefuncs.h"
 #include "ChannelsMgr.h"
 #include "PackDealerMainSub.h"
 #include "PackDealerNoHead.h"
-#include "AsynRep.h"
+#include "nngs/AsynRep.h"
 #include "PackUnpackManager.h"
-#include "SyncReq.h"
+#include "nngs/SyncReq.h"
 #include "Routers.h"
 #include "MessageRouter.h"
+#include "LocalNetManager.h"
 #include <atomic>
 
 using std::shared_ptr;
@@ -94,36 +96,16 @@ namespace SMNetwork {
 		initjwtconfig(SMCONF::Configs::getInst2().getJWTConf());
 		Https::sInit();
 		MessageRouter::sInit();
+		assert(LocalNetManager::sInit());
 		assert(MR->start());
 		assert(PackUnpackManager::sInit());
 		assert(ChannelsMgr::sInit());
 		return bret;
 	}
-	void asyn_nng_demo()
+
+	void uninitNetwork()
 	{
-		auto serverfunc = std::make_shared<RouterFuncType>([](std::string& req, string token)->asio::awaitable<RouterFuncReturnType>
-			{
-				RouterFuncReturnType ret = std::make_shared<string>(string("fuck"));
-
-				co_return ret;
-			});
-
-		uint16_t portx = 999;
-
-		SMCONF::addRouterTrans(MainCmd::MainCmdBegin, 0, serverfunc);
-
-		shared_ptr<SMNetwork::PackDealerBase> ps = shared_ptr<SMNetwork::PackDealerBase>(new SMNetwork::PackDealerNoHead(ChannelType::EchoServer));
-
-		SMNetwork::AsynRep rep("127.0.0.1", portx, ChannelType::EchoServer);
-		rep.init(ServeMode::SBind, ps);
-
-		shared_ptr<SMNetwork::PackDealerBase> pc = shared_ptr<SMNetwork::PackDealerBase>(new SMNetwork::PackDealerNoHead(ChannelType::EchoClient));
-		SMNetwork::SyncReq req("127.0.0.1", portx, ChannelType::EchoClient);
-		req.init(ServeMode::SConnect, pc);
-
-		std::string strreq{ "fuck.world" };
-		auto strrep = req.reqrep(strreq, 0);
-		(void)(strrep);
+		LocalNetManager::sUninit();
 	}
 
 	PrepareReqRepRecver prepareReqRep(uint32_t sock, uint32_t msgno)
@@ -181,6 +163,16 @@ namespace SMNetwork {
 	uint32_t newSockNo()
 	{
 		return ++_sockNo;
+	}
+
+	bool addPlatformDealer(shared_ptr<PlatformPackInterface> pack)
+	{
+		return PUM->addPlatformPack(pack->getMain(), pack);
+	}
+
+	shared_ptr<PlatformPackInterface> clonePlatformPack(int mainc)
+	{
+		return PUM->clone(mainc);
 	}
 
 }

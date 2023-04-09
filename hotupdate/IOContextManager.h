@@ -27,12 +27,14 @@ public:
 public:
 	IOContextManager(asio::io_context* ioc);
 	tf::Executor* getExec();
+	tf::Executor* getNetExec();
 	asio::io_context* getIoc();
 	bool run(int threads);
 private:
 	
 	asio::io_context* _ioc{nullptr};
 	shared_ptr<tf::Executor> _ex{nullptr};
+	shared_ptr<tf::Executor> _exNet{nullptr};
 };
 }
 

@@ -30,10 +30,12 @@ typedef std::function<void()> DependIOCTXInitFuncType;
 namespace SMHotupdate
 {
 	HOTUPDATE_EXPORT bool sInit(asio::io_context* ioc);
+	HOTUPDATE_EXPORT void sUninit();
 	HOTUPDATE_EXPORT asio::io_context* getIoContext();
 	HOTUPDATE_EXPORT bool  AddDependIOCTXInitFunc(shared_ptr<DependIOCTXInitFuncType> func);
 	HOTUPDATE_EXPORT asio::io_context* getContext();
 	HOTUPDATE_EXPORT tf::Executor* getExec();
+	HOTUPDATE_EXPORT tf::Executor* getNetExec();
 }
 
 #define IOCTX (SMHotupdate::getContext())
@@ -43,3 +45,5 @@ namespace SMHotupdate
 #define IOCTXHOTUPDATE (SMHotupdate::getContext())
 
 #define TFEXEC (SMHotupdate::getExec())
+
+#define TFNET (SMHotupdate::getNetExec())

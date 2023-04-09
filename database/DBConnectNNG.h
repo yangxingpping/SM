@@ -6,11 +6,11 @@
 #include "nng/protocol/reqrep0/req.h"
 #include "spdlog/spdlog.h"
 #include "spdlog/fmt/bin_to_hex.h"
-
-#include "AsynReq.h"
+#include "enums.h"
+#include "../networkinterface/nngs/AsynReq.h"
 #include "PackDealerMainSub.h"
 #include "myconcept.h"
-
+#include "../networkinterface/nngs/ReqManager.h"
 #include <string>
 #include <string_view>
 #include <algorithm>
@@ -19,6 +19,8 @@
 
 using std::string;
 using std::string_view;
+using std::shared_ptr;
+using std::make_shared;
 
 namespace SMDB
 {
@@ -27,12 +29,12 @@ class DATABASE_EXPORT DBConnectNNG
   public:
     DBConnectNNG( string ip, uint16_t port);
     ~DBConnectNNG();
-    asio::awaitable<bool> _execQuery(string& req, string& rep, int op);
+    asio::awaitable<bool> _execQuery(shared_ptr<string> req, string& rep);
 
 private:
     string _ip;
     uint16_t _port;
-    std::shared_ptr<SMNetwork::AsyncReq> _sock;
-    std::shared_ptr<SMNetwork::PackDealerBase> _packer;
+    shared_ptr < SMNetwork::ReqManager<ChannelModeC::Initiative, MainCmd>> _channels;
+    MainCmd _mainc = MainCmd::DBQuery;
 };
 }

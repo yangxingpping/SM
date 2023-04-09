@@ -2,7 +2,7 @@
 
 #include "databaseExport.h"
 #include "enums.h"
-#include "TcpServerCombine.h"
+#include "../networkinterface/socket/TcpServerCombine.h"
 #include <string>
 #include <memory>
 
@@ -22,6 +22,6 @@ namespace SMDB
 	private:
 		string _addr;
 		uint16_t _port;
-		shared_ptr<SMNetwork::TcpServerCombine<ChannelType::DBServer, NetHeadType::FixPackLenPlaceHolder, ChannelModeC::Initiative, MainCmd>> _tcp;
+		shared_ptr<SMNetwork::TcpServerCombine<ChannelModeC::Initiative, MainCmd>> _tcp;
 	};
 }

@@ -18,7 +18,7 @@ DBConnectTCP::DBConnectTCP( string ip, uint16_t port)
     : _ip(ip)
     , _port(port)
 {
-    _client = make_shared<SMNetwork::TcpClientCombine<ChannelType::DBClient, NetHeadType::FixPackLenPlaceHolder, ChannelModeC::Initiative>>(_ip, _port);
+    _client = make_shared<SMNetwork::TcpClientCombine<ChannelModeC::Initiative, MainCmd>>(_ip, _port, MainCmd::DBQuery);
 }
 
 DBConnectTCP::~DBConnectTCP() {
@@ -26,7 +26,7 @@ DBConnectTCP::~DBConnectTCP() {
 }
 
 
-asio::awaitable<bool> DBConnectTCP::_execQuery(string& req, string& rep, uint16_t op)
+asio::awaitable<bool> DBConnectTCP::_execQuery(string& req, string& rep)
 {
     bool succ = false;
     uint8_t trycount = 0;
@@ -38,24 +38,11 @@ asio::awaitable<bool> DBConnectTCP::_execQuery(string& req, string& rep, uint16_
         {
             co_return succ;
         }
-        auto pack = PUM->clone(magic_enum::enum_integer(_mainc));
-        assert(pack != nullptr);
-        if (pack == nullptr)
-        {
-            SPDLOG_ERROR("get plat pack for {} failed", magic_enum::enum_name(_mainc));
-            co_return succ;
-        }
-        pack->setAss(op);
-        auto strreq = make_shared<string>();
-        strreq->resize(pack->len());
-        pack->pack(span<char>(strreq->begin(), strreq->begin() + pack->len()));
-        strreq->append(req);
+        auto strreq = make_shared<string>(req);
         auto ret2 = co_await ret->reqrep(strreq);
-        if (ret2 && ret2->length() > pack->len())
+        if (ret2)
         {
-            assert(pack->unpack(string_view(ret2->begin(), ret2->begin() + pack->len())));
-            assert(pack->getMain() == magic_enum::enum_integer(_mainc));
-            rep = ret2->substr(pack->len());
+            rep = *ret2;
             succ = true;
         }
         if (succ)

@@ -7,22 +7,33 @@
 using std::make_shared;
 using std::map;
 
+static bool _inited{ false };
+
 static shared_ptr<map<DependIOCTXInitFuncType*, shared_ptr<DependIOCTXInitFuncType>>> _dendioctxinitfuncs = nullptr;
 
 namespace SMHotupdate
 {
 	bool sInit(asio::io_context* ioc)
 	{
-		bool bret{ true };
-		IOContextManager::sInit(ioc);
-		if (_dendioctxinitfuncs != nullptr)
+		bool bret{ false };
+		if (!_inited)
 		{
-			for (auto& func : *_dendioctxinitfuncs)
+			IOContextManager::sInit(ioc);
+			if (_dendioctxinitfuncs)
 			{
-				(*func.second)();
+				for (auto& func : *_dendioctxinitfuncs)
+				{
+					(*func.first)();
+				}
 			}
+			bret = true;
 		}
 		return bret;
+	}
+
+	HOTUPDATE_EXPORT void sUninit()
+	{
+
 	}
 
 	asio::io_context* getIoContext()
@@ -54,6 +65,11 @@ namespace SMHotupdate
 	tf::Executor* getExec()
 	{
 		return IOContextManager::getInst()->getExec();
+	}
+
+	tf::Executor* getNetExec()
+	{
+		return IOContextManager::getInst()->getNetExec();
 	}
 
 }

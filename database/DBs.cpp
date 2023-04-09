@@ -6,8 +6,8 @@
 #include "spdlog/spdlog.h"
 
 #include "PackDealerMainSub.h"
-#include "TcpServer.h"
-#include "AsynRep.h"
+#include "../networkinterface/socket/TcpServer.h"
+#include "../networkinterface/nngs/AsynRep.h"
 #include "DBNNg.h"
 #include "DBTcp.h"
 #include "conf.h"

@@ -13,7 +13,7 @@ namespace SMDB
 
 	void DBTcp::init()
 	{
-		_tcp = make_shared<SMNetwork::TcpServerCombine<ChannelType::DBServer, NetHeadType::FixPackLenPlaceHolder, ChannelModeC::Initiative, MainCmd>>(_addr, _port, MainCmd::DBQuery);
+		_tcp = make_shared<SMNetwork::TcpServerCombine<ChannelModeC::Initiative, MainCmd>>(_addr, _port, MainCmd::DBQuery);
 		_tcp->init();
 	}
 

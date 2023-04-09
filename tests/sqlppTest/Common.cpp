@@ -74,7 +74,8 @@ int main(int argc, char* argv[])
 	SMDB::init(true);
 	int result = Catch::Session().run(argc, argv);
 	//clean-up...
-	
+	//https://github.com/gabime/spdlog/issues/1533
+	spdlog::shutdown();
 	return result;
 }
 

@@ -2,7 +2,6 @@
 #include "DBConnectNNG.h"
 #include "DBConnectManager.h"
 #include "fmt/format.h"
-#include "PackDealerMainSub.h"
 #include <exception>
 #include <stdexcept>
 #include <assert.h>
@@ -13,9 +12,12 @@ using std::runtime_error;
 using std::to_string;
 namespace SMDB
 {
-DBConnectNNG::DBConnectNNG( string ip, uint16_t port):_ip(ip), _port(port), _sock(nullptr)
+DBConnectNNG::DBConnectNNG( string ip, uint16_t port)
+    :_ip(ip)
+    , _port(port)
 {
-    
+    auto addr = fmt::format("tcp://{}:{}", ip, port);
+    _channels = make_shared<SMNetwork::ReqManager<ChannelModeC::Initiative, MainCmd>>(string_view(addr), MainCmd::DBQuery);
 }
 
 
@@ -23,24 +25,21 @@ DBConnectNNG::~DBConnectNNG() {
 
 }
 
-asio::awaitable<bool> DBConnectNNG::_execQuery(string& req, string& rep, int op)
+asio::awaitable<bool> DBConnectNNG::_execQuery(shared_ptr<string> req, string& rep)
 {
-    bool bret = true;
-    if (_sock == nullptr)
-    {
-        _sock = std::make_shared<SMNetwork::AsyncReq>(_ip, _port, ChannelType::DBClient);
-        _packer = std::shared_ptr<SMNetwork::PackDealerBase>(new SMNetwork::PackDealerMainSub(MainCmd::DBQuery, ChannelType::DBClient));
-        _packer->setAssc(op);
-        _sock->init(ServeMode::SConnect, _packer);
-    }
-    auto w = _sock->getWorker();
-    assert(w != nullptr);
+    bool bret{ false };
+    assert(_channels);
+    auto w = co_await _channels->getChannel();
     if (w == nullptr)
     {
         co_return false;
     }
     BEGIN_ASIO;
-	rep = co_await w->reqrep(req, (uint16_t)(op));
+    auto ptrep = co_await w->reqrep(req);
+    if (ptrep != nullptr)
+    {
+        rep = *ptrep;
+    }
     END_ASIO;
     co_return bret;
 }

@@ -19,9 +19,10 @@
 #include "asio/signal_set.hpp"
 #include "fmt/format.h"
 #include "FullDuplexChannel.h"
-#include "AsynRep.h"
+#include "nngs/AsynRep.h"
 #include "reqreps.h"
 #include "magic_enum.hpp"
+#include "dealers/MainAssPlatPack.h"
 #include "LocalNetManager.h"
 #include "ChannelCombine.h"
 #include "TransCmdTag.h"
@@ -45,11 +46,12 @@ int main(int argc, char* argv[]) {
 	SMHotupdate::sInit(&ioc);
 	SMNetwork::initNetwork();
 	auto plat = shared_ptr<SMNetwork::PlatformPackInterface>(new SMNetwork::MainAssPlatPack(magic_enum::enum_integer(MainCmd::Echo)));
-	assert(SMNetwork::addPlatformPack<MainCmd>(plat));
+	assert(SMNetwork::addPlatformDealer(plat));
 	int result = Catch::Session().run(argc, argv);
 
 	// your clean-up...
-
+	//https://github.com/gabime/spdlog/issues/1533
+	spdlog::shutdown();
 	return result;
 }
 
@@ -133,13 +135,13 @@ TEST_CASE("tcp req rep", "localNetManager")
 {
 	using namespace SMNetwork;
 	
-	auto [s1, s2] = LNM->createPair(MainCmd::Echo);
+	auto [s1, s2] = LNM->createPair(magic_enum::enum_integer(MainCmd::Echo));
 	
 	asio::co_spawn(*IOCTX, [&]()->asio::awaitable<void> {
 		
 		EchoReq ereq;
 		auto strreq = my_to_string(ereq);
-		auto packer = PUM->clone(magic_enum::enum_integer(MainCmd::Echo));
+		auto packer = SMNetwork::clonePlatformPack(magic_enum::enum_integer(MainCmd::Echo));
 		assert(packer);
 		shared_ptr<string> packsend = make_shared<string>();
 		packsend->resize(packer->len());

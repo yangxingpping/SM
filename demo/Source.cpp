@@ -10,8 +10,8 @@
 #include "magic_enum.hpp"
 #include "DBManager.h"
 #include "networkinterface.h"
-#include "TcpClient.h"
-#include "TcpServer.h"
+#include "socket/TcpClient.h"
+#include "socket/TcpServer.h"
 #include "DBTcp.h"
 #include "subprocess.h"
 
@@ -19,9 +19,9 @@
 #include "date/tz.h"
 #include "Routers.h"
 #include "database.h"
-#include "AsynRep.h"
-#include "AsynReq.h"
-#include "SyncReq.h"
+#include "nngs/AsynRep.h"
+#include "nngs/AsynReq.h"
+#include "nngs/SyncReq.h"
 #include "PackDealerNoHead.h"
 #include "FileOp.h"
 
@@ -303,7 +303,7 @@ void test_nng_asyn_asio()
 
 void test_nng_asyn_asio2()
 {
-	auto serverfunc = std::make_shared<RouterFuncType>([](std::string req, string token)->asio::awaitable<RouterFuncReturnType>
+	/*auto serverfunc = std::make_shared<RouterFuncType>([](std::string req, string token)->asio::awaitable<RouterFuncReturnType>
 	{
 		RouterFuncReturnType  ret = std::make_shared<string>(string{ "hello" });
 
@@ -325,40 +325,40 @@ void test_nng_asyn_asio2()
 
 	std::string strreq{ "hello.world" };
 	auto strrep = req.reqrep(strreq, 0);
-	int i = 1;
+	int i = 1;*/
 }
 
-void test_nng_asyn_reqrep_asio()
-{
-	auto serverfunc = std::make_shared<RouterFuncType>([](std::string req, string token)->asio::awaitable<RouterFuncReturnType>
-		{
-			RouterFuncReturnType  ret = std::make_shared<string>(string("fuck"));
-
-			co_return ret;
-		});
-
-	uint16_t portx = 888;
-
-	SMCONF::addRouterTrans(MainCmd::DefaultMain, 0, serverfunc);
-
-	shared_ptr<SMNetwork::PackDealerBase> ps = shared_ptr<SMNetwork::PackDealerBase>(new SMNetwork::PackDealerNoHead(ChannelType::EchoServer));
-	shared_ptr<SMNetwork::PackDealerBase> pc = shared_ptr<SMNetwork::PackDealerBase>(new SMNetwork::PackDealerNoHead(ChannelType::EchoClient));
-
-	SMNetwork::AsynRep rep("127.0.0.1", portx, ChannelType::EchoServer);
-	rep.init(ServeMode::SBind, ps);
-
-	SMNetwork::AsyncReq req("127.0.0.1", portx, ChannelType::EchoClient);
-	req.init(ServeMode::SConnect, pc);
-
-	asio::co_spawn(*IOCTX, [&]()->asio::awaitable<void> {
-		std::string strreq{ "hello.world" };
-		auto strrep = co_await req.reqrep(strreq);
-		SPDLOG_INFO("req {} recv rep {}", strreq, *strrep);
-		co_return;
-		}(), asio::detached);
-
-	std::this_thread::sleep_for(std::chrono::seconds(10));
-}
+//void test_nng_asyn_reqrep_asio()
+//{
+//	auto serverfunc = std::make_shared<RouterFuncType>([](std::string req, string token)->asio::awaitable<RouterFuncReturnType>
+//		{
+//			RouterFuncReturnType  ret = std::make_shared<string>(string("fuck"));
+//
+//			co_return ret;
+//		});
+//
+//	uint16_t portx = 888;
+//
+//	SMCONF::addRouterTrans(MainCmd::DefaultMain, 0, serverfunc);
+//
+//	shared_ptr<SMNetwork::PackDealerBase> ps = shared_ptr<SMNetwork::PackDealerBase>(new SMNetwork::PackDealerNoHead(ChannelType::EchoServer));
+//	shared_ptr<SMNetwork::PackDealerBase> pc = shared_ptr<SMNetwork::PackDealerBase>(new SMNetwork::PackDealerNoHead(ChannelType::EchoClient));
+//
+//	SMNetwork::AsynRep rep("127.0.0.1", portx, ChannelType::EchoServer);
+//	rep.init(ServeMode::SBind, ps);
+//
+//	SMNetwork::AsyncReq req("127.0.0.1", portx, ChannelType::EchoClient);
+//	req.init(ServeMode::SConnect, pc);
+//
+//	asio::co_spawn(*IOCTX, [&]()->asio::awaitable<void> {
+//		std::string strreq{ "hello.world" };
+//		auto strrep = co_await req.reqrep(strreq);
+//		SPDLOG_INFO("req {} recv rep {}", strreq, *strrep);
+//		co_return;
+//		}(), asio::detached);
+//
+//	std::this_thread::sleep_for(std::chrono::seconds(10));
+//}
 
 void test_asio_tcp_client_timeout()
 {
@@ -450,7 +450,7 @@ int main(int argc, char* argv[])
 	test_asio();
 	test_asio_timer();
 	test_nng_asyn_asio();
-	test_nng_asyn_reqrep_asio();
+	//test_nng_asyn_reqrep_asio();
 	//test_asio_tcp_client_timeout();
 	//test_nng_asyn_asio2();
 	asio::co_spawn(*IOCTX, [=, &biorun]() -> asio::awaitable<void> {

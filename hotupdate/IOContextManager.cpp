@@ -48,7 +48,9 @@ IOContextManager::IOContextManager(asio::io_context* ioc)
 {
 	assert(_ioc != nullptr);
 	assert(_ex == nullptr);
+	assert(_exNet == nullptr);
 	_ex = make_shared<tf::Executor>();
+	_exNet = make_shared<tf::Executor>();
 }
 
 tf::Executor* IOContextManager::getExec()
@@ -57,6 +59,12 @@ tf::Executor* IOContextManager::getExec()
 	return _ex.get();
 }
 
+
+tf::Executor* IOContextManager::getNetExec()
+{
+	assert(_exNet != nullptr);
+	return _exNet.get();
+}
 
 asio::io_context* IOContextManager::getIoc()
 {

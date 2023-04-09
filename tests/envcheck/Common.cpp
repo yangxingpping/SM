@@ -96,12 +96,16 @@ int main(int argc, char* argv[]) {
 	asio::io_context ioc;
 	SMHotupdate::sInit(&ioc);
 	SMNetwork::initNetwork();
-	auto plat = shared_ptr<SMNetwork::PlatformPackInterface>(new SMNetwork::MainAssPlatPack(magic_enum::enum_integer(MainCmd::Echo)));
-	assert(SMNetwork::addPlatformPack<MainCmd>(plat));
+	//auto plat = shared_ptr<SMNetwork::PlatformPackInterface>(new SMNetwork::MainAssPlatPack(magic_enum::enum_integer(MainCmd::Echo)));
+	//assert(SMNetwork::addPlatformPack<MainCmd>(plat));
 	int result = Catch::Session().run(argc, argv);
 
 	// your clean-up...
+	SMNetwork::uninitNetwork();
+	SMHotupdate::sUninit();
 
+	//https://github.com/gabime/spdlog/issues/1533
+	spdlog::shutdown();
 	return result;
 }
 

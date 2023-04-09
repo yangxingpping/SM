@@ -53,11 +53,11 @@ namespace SMNetwork
  * 
  * @tparam NetImpl 
  */
-template<NetInterface NetImpl, EnumConcept MainType>
+template<NetInterface NetImpl>
 class ChannelCombine
 {
   public:
-      ChannelCombine(shared_ptr<NetImpl> sock, ChannelModeC cmode, MainType maincmd)
+      ChannelCombine(shared_ptr<NetImpl> sock, ChannelModeC cmode, int maincmd)
           :_sock(sock), _cmode(cmode), _mainc(maincmd)
     {
           switch (_cmode)
@@ -102,7 +102,7 @@ class ChannelCombine
                         auto recvAppRep = prepareAppRep(h2->_sock->sockNo(), msg->No());
                         assert(recvAppRep != nullptr);
                         BEGIN_ASIO;
-                        co_await addPackFromIo(h2->_sock->sockNo(), magic_enum::enum_integer(h2->_mainc), msg);
+                        co_await addPackFromIo(h2->_sock->sockNo(), h2->_mainc, msg);
                         co_await recvAppRep->async_wait(asio::deferred);
                         auto rep = recvAppRep->get();
                         if (rep)
@@ -140,6 +140,13 @@ class ChannelCombine
     asio::awaitable<shared_ptr<string>> reqrep(shared_ptr<string> req)
     {
         shared_ptr<string> ret{nullptr};
+        assert(req != nullptr);
+        if (req == nullptr)
+        {
+            SPDLOG_WARN("reqrep param platform message req empty");
+            co_return ret;
+        }
+        SPDLOG_INFO("reqrep request len {}", req->length());
         auto no = newReq();
         auto recvers = SMNetwork::prepareReqRep(_sock->sockNo(), no);
         assert(recvers._valid);
@@ -208,14 +215,14 @@ class ChannelCombine
 
     int MainCmd()
     {
-        return magic_enum::enum_integer(_mainc);
+        return _mainc;
     }
 
     shared_ptr<NetImpl> _sock{ nullptr };
     ChannelModeC _cmode;
     atomic_uint32_t _reqNo{ 0 };
     bool _brun{ true };
-    MainType _mainc;
+    int _mainc;
 };
 
 };

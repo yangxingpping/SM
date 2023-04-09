@@ -7,6 +7,7 @@
 #include "Utils.h"
 #include "oneshot.hpp"
 #include "NMessage.h"
+#include "PlatformPackInterface.h"
 #include "myconcept.h"
 #include "tsl/htrie_map.h"
 #include <map>
@@ -83,7 +84,7 @@ namespace SMNetwork
     NETWORKINTERFACE_EXPORT bool isjwttokenright(string_view token);
     NETWORKINTERFACE_EXPORT string getjwttoken();
     NETWORKINTERFACE_EXPORT bool initNetwork();
-    NETWORKINTERFACE_EXPORT void  asyn_nng_demo();
+	NETWORKINTERFACE_EXPORT void uninitNetwork();
 
 	NETWORKINTERFACE_EXPORT PrepareReqRepRecver prepareReqRep(uint32_t sock, uint32_t msgno);
 	NETWORKINTERFACE_EXPORT bool FinishReqRepRecver(uint32_t sock, uint32_t msgno);
@@ -100,6 +101,9 @@ namespace SMNetwork
 	NETWORKINTERFACE_EXPORT asio::awaitable<bool> addPackFromApp(uint32_t sock, shared_ptr<NMessage> msg);
 
 	NETWORKINTERFACE_EXPORT uint32_t newSockNo();
+
+	NETWORKINTERFACE_EXPORT bool addPlatformDealer(shared_ptr<PlatformPackInterface> pack);
+	NETWORKINTERFACE_EXPORT shared_ptr<PlatformPackInterface> clonePlatformPack(int mainc);
 
 template <class MainC, class AssC>
 tuple<string, string> combinePath(MainC mainc, AssC assc)

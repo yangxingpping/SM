@@ -36,6 +36,8 @@ int main(int argc, char* argv[])
 	int result = Catch::Session().run(argc, argv);
 	// your clean-up...
 	RAYX::Shutdown();
+	//https://github.com/gabime/spdlog/issues/1533
+	spdlog::shutdown();
 	return result;
 }
 

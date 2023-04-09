@@ -1,7 +1,7 @@
 #pragma once
 
 #include "databaseExport.h"
-#include "AsynRep.h"
+#include "../networkinterface/nngs/RepManager.h"
 #include <string>
 #include <memory>
 #include <stdint.h>
@@ -19,6 +19,6 @@ namespace SMDB
 	private:
 		string _addr;
 		uint16_t _port;
-		shared_ptr<SMNetwork::AsynRep> _sock;
+		shared_ptr<SMNetwork::RepManager<ChannelModeC::Initiative, MainCmd>> _sock;
 	};
 }

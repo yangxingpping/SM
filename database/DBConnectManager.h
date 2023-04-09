@@ -12,12 +12,15 @@
 #include "myconcept.h"
 #include "DBConnectNNG.h"
 #include "DBConnectTCP.h"
+#include "networkinterface.h"
+#include "PlatformPackInterface.h"
 #include "concurrentqueue/concurrentqueue.h"
 #include "spdlog/spdlog.h"
 #include "iguana/json.hpp"
 #include "magic_enum.hpp"
 #include <string>
 #include <memory>
+#include <span>
 #include <any>
 #include <functional>
 
@@ -27,6 +30,7 @@ using std::shared_ptr;
 using std::any;
 using std::function;
 using std::any_cast;
+using std::span;
 
 enum class DBMethod
 {
@@ -44,8 +48,7 @@ namespace SMDB
 		static shared_ptr< DBConnectManager> getInst();
 		static DBConnectManager& getInst2();
 
-		template <class Rep>
-		asio::awaitable<bool> executeQueryTCP(std::shared_ptr<std::string> req, Rep& rep, int op)
+		asio::awaitable<bool> executeQueryTCP(std::shared_ptr<std::string> req, string& rep)
 		{
 			bool bret = false;
 			string strrep;
@@ -56,35 +59,21 @@ namespace SMDB
 				ret = make_shared<DBConnectTCP>(_ip, _port);
 			}
 			BEGIN_ASIO;
-			bret = co_await ret->_execQuery(*req, strrep, op);
+			bret = co_await ret->_execQuery(*req, rep);
 			END_ASIO;
 			if (bret)
 			{
 				_connsTcp.enqueue(ret);
-				bret = my_json_parse_from_string(rep, strrep);
-				if(bret)
-				{
-					co_return bret;
-				}
-				else
-				{
-					SPDLOG_WARN("tcp database query req {}, rep {} parse rep failed", *req, strrep);
-				}
-			}
-			else
-			{
-				SPDLOG_WARN("execute query req {} failed", *req);
 			}
 			co_return bret;
 		}
 
-		template <class Rep>
-		asio::awaitable<bool> executeQueryNNG(std::shared_ptr<std::string> req, Rep& rep, int op)
+		asio::awaitable<bool> executeQueryNNG(std::shared_ptr<std::string> req, string& rep)
 		{
 			bool bret = false;
 			string strrep;
-			SPDLOG_INFO("send db query req {} query type {}", *req, SMUtils::getOpDBNameByValue(op));
-			auto addrinfo = SMCONF::Configs::getInst2().getDBConfig()._nngClient;
+			SPDLOG_INFO("send db query req {} ", *req);
+			auto addrinfo = SMCONF::getDBConfig()->_nngClient;
 
 			shared_ptr<DBConnectNNG> ret;
 			if (!_connsNNG.try_dequeue(ret))
@@ -93,17 +82,10 @@ namespace SMDB
 				ret = make_shared<DBConnectNNG>(addrinfo._ip, addrinfo._port);
 				END_ASIO;
 			}
-			bret = co_await ret->_execQuery(*req, strrep, op);
+			bret = co_await ret->_execQuery(req, rep);
 			if (bret)
 			{
 				_connsNNG.enqueue(ret);
-			}
-
-
-			bret = my_json_parse_from_string(rep, strrep);
-			if (!bret)
-			{
-				SPDLOG_WARN("nng database operate {} str {} return {} parse failed ", SMUtils::getOpDBNameByValue(op), *req, strrep);
 			}
 			co_return bret;
 		}
@@ -113,28 +95,51 @@ namespace SMDB
 		{
 			bool bret = false;
 			auto strreq = my_to_string(req);
+			auto pstrreq = make_shared<string>();
+			auto _packer = SMNetwork::clonePlatformPack(magic_enum::enum_integer(_mainc));
+			pstrreq->resize(_packer->len());
+			_packer->setAss(op);
+			bret = _packer->pack(span<char>(pstrreq->begin(), pstrreq->end()));
+			assert(bret);
+			if (!bret)
+			{
+				SPDLOG_WARN("pack database query req failed");
+				co_return bret;
+			}
+			pstrreq->append(strreq->begin(), strreq->end());
+			string platformRep;
+			bret = false;
 			BEGIN_ASIO;
 			switch (method)
 			{
 			case DBMethod::TCP:
 			{
-				bret = co_await executeQueryTCP(strreq, rep, op);
+				bret = co_await executeQueryTCP(pstrreq, platformRep);
 			}break;
 			case DBMethod::NNG:
 			{
-				bret = co_await executeQueryNNG(strreq, rep, op);
+				bret = co_await executeQueryNNG(pstrreq, platformRep);
 			}break;
 			default:
 			{
 				assert(0);
 			}break;
 			}
+			END_ASIO;
 			if (!bret)
 			{
 				rep.code = magic_enum::enum_integer(statusCode::sendDBQueryExecFailed);
 				SPDLOG_WARN("database operate {} return false ", SMUtils::getOpDBNameByValue(op));
 			}
-			END_ASIO;
+			else
+			{
+				bret = my_json_parse_from_string(rep, string_view(platformRep.data() + _packer->HeadLen(), platformRep.length() - _packer->HeadLen()));
+				if (!bret)
+				{
+					rep.code = magic_enum::enum_integer(statusCode::invalidJson);
+					SPDLOG_WARN("parse json string failed");
+				}
+			}
 			co_return bret;
 		}
 
@@ -150,6 +155,7 @@ namespace SMDB
 		moodycamel::ConcurrentQueue<shared_ptr<DBConnectNNG>> _connsNNG;
 		DBConnectManager(string ip, uint16_t port);
 
+		MainCmd _mainc = MainCmd::DBQuery;
 	};
 
 }

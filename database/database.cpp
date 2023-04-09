@@ -4,8 +4,10 @@
 
 #include "DealAuth.h"
 #include "DealEcho.h"
-#include "AsynRep.h"
-#include "SyncReq.h"
+#include "../networkinterface/nngs/AsynRep.h"
+#include "../networkinterface/nngs/SyncReq.h"
+#include "dealers/MainAssPlatPack.h"
+#include "networkinterface.h"
 #include "PackUnpackManager.h"
 
 #include "DBs.h"
@@ -92,7 +94,8 @@ namespace SMDB
 	{
         auto conftz = SMCONF::getTimeZoneConfig();
         assert(setDefaultTimeZone(conftz->_defaultTimeZone));
-        assert(PUM->addPlatformPack(magic_enum::enum_integer(MainCmd::DBQuery), shared_ptr<SMNetwork::PlatformPackInterface>(new SMNetwork::MainAssPlatPack(magic_enum::enum_integer(MainCmd::DBQuery)))));
+        auto dealer = shared_ptr<SMNetwork::PlatformPackInterface>(new SMNetwork::MainAssPlatPack(magic_enum::enum_integer(MainCmd::DBQuery)));
+        assert(SMNetwork::addPlatformDealer(dealer));
         if (dbnode)
         {
             DBs::getInst().init();
