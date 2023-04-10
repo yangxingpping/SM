@@ -33,7 +33,7 @@ target_include_directories(
     "$<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/export>"
 )
 
-target_link_libraries(Utils PRIVATE spdlog::spdlog )
+target_link_libraries(Utils PRIVATE spdlog::spdlog PRIVATE date::date date::date-tz PRIVATE msgpack-c)
 
 
 

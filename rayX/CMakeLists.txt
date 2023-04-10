@@ -26,7 +26,7 @@ ELSEIF(CMAKE_SYSTEM_NAME MATCHES "Darwin")
     ADD_LIBRARY(rayX  ${A})
 ENDIF(CMAKE_SYSTEM_NAME MATCHES "Windows")
 
-#target_link_libraries(rayX  PRIVATE ZLIB::ZLIB PRIVATE nng::nngpp    PRIVATE Utils PRIVATE configs PRIVATE hotupdate PRIVATE nlohmann_json::nlohmann_json PRIVATE nng::nng PRIVATE spdlog::spdlog PRIVATE OpenSSL::SSL OpenSSL::Crypto)
+target_link_libraries(rayX PRIVATE msgpack-c)# PRIVATE ZLIB::ZLIB PRIVATE nng::nngpp    PRIVATE Utils PRIVATE configs PRIVATE hotupdate PRIVATE nlohmann_json::nlohmann_json PRIVATE nng::nng PRIVATE spdlog::spdlog PRIVATE OpenSSL::SSL OpenSSL::Crypto)
 
 
 generate_export_header(rayX EXPORT_FILE_NAME ${CMAKE_CURRENT_SOURCE_DIR}/../inc/os/${CMAKE_SYSTEM_NAME}/export_flags/${PROJECT_NAME}Export.h)
