@@ -38,6 +38,8 @@ python交互(pybind11)
 
 分布式执行运行时(Ray,分布式调用直接简化成C++的函数和类，使用非常简单)
 
+rpc(rpclib)
+
 通用框架SM(Suture monster 名字本身是缝合)，中文名:百家衣
 
 <img src="https://github.com/yangxingpping/SM/blob/main/logo.png" height="180" /><br>
