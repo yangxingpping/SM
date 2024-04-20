@@ -18,7 +18,6 @@
 #include "boost/callable_traits/args.hpp"
 #include <thread>
 
-using namespace std;
 
 #include "Utils.h"
 
@@ -52,28 +51,19 @@ TEST_CASE("int value", "put and get")
 
 TEST_CASE("big endian", "endian convert")
 {
-    uint16_t a = 111, b = 222;
-    uint16_t x, y;
+    uint64_t a = 111, b = 222;
+    uint64_t x, y;
+
     
-    auto buffer = new uint8_t[sizeof(uint16_t) * 2];
-    
-    //// Usage: `put` and `get`
-    //endian::network::put(a, buffer);
-    //endian::network::put(b, buffer + sizeof(a));
 
-    //endian::network::get(x, buffer);
-    //y = endian::network::get<uint16_t>(buffer + sizeof(x));
-    //assert(x == a && y == b);
+    uint8_t buffer[sizeof(uint64_t) * 2];
 
-    //// Usage: `stream_writer` and `stream_reader`
-    //x = y = 0;
-    //std::vector<uint8_t> stream_buffer(sizeof(uint16_t) * 2);
-    //endian::stream_writer<endian::network> writer(stream_buffer.data(),
-    //    stream_buffer.size());
-    //writer << a << b;
+    endian::network::put(a, buffer);
+    endian::network::put(b, buffer + sizeof(a));
 
-    //endian::stream_reader<endian::network> reader(stream_buffer.data(),
-    //    stream_buffer.size());
-    //reader >> x >> y;
-    //assert(x == a && y == b);
+    endian::network::get(x, buffer);
+    endian::network::get(y, buffer + sizeof(x));
+
+	REQUIRE(a == x);
+	REQUIRE(b == y);
 }
