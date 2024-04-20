@@ -56,7 +56,7 @@ TEST_CASE("big endian", "endian convert")
     uint16_t x, y;
     
     auto buffer = new uint8_t[sizeof(uint16_t) * 2];
-
+    
     //// Usage: `put` and `get`
     //endian::network::put(a, buffer);
     //endian::network::put(b, buffer + sizeof(a));
