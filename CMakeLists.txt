@@ -32,6 +32,7 @@ find_package(date CONFIG REQUIRED)
 find_package(Sqlpp11 CONFIG REQUIRED)
 find_package(unofficial-sqlite3 CONFIG REQUIRED)
 find_package(msgpack-c CONFIG REQUIRED)
+find_package(function2 CONFIG REQUIRED)
 
 
 add_definitions(-DUSE_SQLITE -DONESHOT_ASIO_STANDALONE -DASIO_HAS_FILE -DNOMINMAX -DSPDLOG_COMPILED_LIB)
@@ -71,6 +72,8 @@ add_subdirectory(networkinterface)
 add_subdirectory(hotupdate)
 add_subdirectory(Utils)
 add_subdirectory(rayX)
+add_subdirectory(endian)
+
 #add_subdirectory(uSockets2)
 add_subdirectory(hashlibrary)
 
