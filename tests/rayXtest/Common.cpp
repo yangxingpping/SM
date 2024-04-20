@@ -12,6 +12,7 @@
 #include "endian/network.hpp"
 #include "endian/stream_reader.hpp"
 #include "endian/stream_writer.hpp"
+#include "function2/function2.hpp"
 #include "templatefuncs.h"
 #include "spdlog/spdlog.h"
 #include "boost/callable_traits/return_type.hpp"
@@ -49,12 +50,15 @@ TEST_CASE("int value", "put and get")
 	auto put_get_result = *(ray::Get(object));*/
 }
 
+TEST_CASE("function2", "lambda")
+{
+
+}
+
 TEST_CASE("big endian", "endian convert")
 {
     uint64_t a = 111, b = 222;
     uint64_t x, y;
-
-    
 
     uint8_t buffer[sizeof(uint64_t) * 2];
 
