@@ -72,6 +72,7 @@ add_subdirectory(networkinterface)
 add_subdirectory(hotupdate)
 add_subdirectory(Utils)
 add_subdirectory(rayX)
+add_subdirectory(whereami)
 #add_subdirectory(endian)
 
 #add_subdirectory(uSockets2)
