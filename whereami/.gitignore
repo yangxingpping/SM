@@ -1,0 +1,9 @@
+.DS_Store
+*~
+*.swp
+
+/bin
+
+/build_win/
+/_win-vs14/
+/.vscode/
