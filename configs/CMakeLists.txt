@@ -39,7 +39,7 @@ target_include_directories(
 
 
 
-target_link_libraries(configs PRIVATE toml11::toml11 PRIVATE Utils PRIVATE spdlog::spdlog )
+target_link_libraries(configs PRIVATE whereami PRIVATE toml11::toml11 PRIVATE Utils PRIVATE spdlog::spdlog )
 
 
 

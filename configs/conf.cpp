@@ -1,11 +1,18 @@
 
 #include "conf.h"
 #include "Configs.h"
+#include "whereami.h"
 namespace SMCONF
 {
 	bool sInit(const char* path)
 	{
 		bool bret{ false };
+
+		string exepath;
+		exepath.resize(1024);
+		int outlen{ 0 };
+		auto mypath = wai_getModulePath(exepath.data(), exepath.size(), &outlen);
+
 		if (!path)
 		{
 			return bret;

@@ -404,6 +404,9 @@ void test_zoned_time()
 int main(int argc, char* argv[])
 {
 	string exepath;
+
+	SMCONF::sInit("hello");
+
 	exepath.resize(1024);
 	int outlen{ 0 };
 	auto mypath = wai_getExecutablePath(exepath.data(), exepath.size(), &outlen);
