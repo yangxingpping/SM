@@ -17,7 +17,7 @@ AUX_SOURCE_DIRECTORY(. A)
 
 add_executable(demo ${A} )
 
-target_link_libraries(demo PRIVATE date::date date::date-tz PRIVATE spdlog::spdlog PRIVATE hashlibrary PRIVATE ZLIB::ZLIB PRIVATE OpenSSL::SSL PRIVATE OpenSSL::Crypto PRIVATE $<IF:$<TARGET_EXISTS:uv_a>,uv_a,uv>  PRIVATE Utils  PRIVATE configs PRIVATE database PRIVATE hotupdate PRIVATE networkinterface PRIVATE Taskflow::Taskflow PRIVATE nng::nng PRIVATE fmt::fmt PRIVATE efsw::efsw)
+target_link_libraries(demo PRIVATE whereami PRIVATE date::date date::date-tz PRIVATE spdlog::spdlog PRIVATE hashlibrary PRIVATE ZLIB::ZLIB PRIVATE OpenSSL::SSL PRIVATE OpenSSL::Crypto PRIVATE $<IF:$<TARGET_EXISTS:uv_a>,uv_a,uv>  PRIVATE Utils  PRIVATE configs PRIVATE database PRIVATE hotupdate PRIVATE networkinterface PRIVATE Taskflow::Taskflow PRIVATE nng::nng PRIVATE fmt::fmt PRIVATE efsw::efsw)
 
 
 set_target_properties(demo PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/config")

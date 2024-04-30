@@ -2,6 +2,7 @@
 #include "networkinterface.h"
 #include "IOContextManager.h"
 #include "coros.h"
+#include "whereami.h"
 #include "asio/co_spawn.hpp"
 #include "spdlog/spdlog.h"
 #include <iostream>
@@ -402,6 +403,11 @@ void test_zoned_time()
 
 int main(int argc, char* argv[])
 {
+	string exepath;
+	exepath.resize(1024);
+	int outlen{ 0 };
+	auto mypath = wai_getExecutablePath(exepath.data(), exepath.size(), &outlen);
+
 	asio::io_context ioc;
 	bool biorun = true;
 	test_pack();
