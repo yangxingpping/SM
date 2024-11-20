@@ -72,7 +72,7 @@ namespace SMCONF
         }
         {
             const auto& Nremote = toml::find(dbmgr, "tcpserver");
-            if (!Nremote.is_uninitialized())
+            if (!Nremote.is_empty())
             {
                 auto& reconf = _inst->_dbconf._tcpServer;
                 reconf._ip = toml::find<string>(Nremote, "addr");
@@ -82,7 +82,7 @@ namespace SMCONF
         }
         {
             const auto& Nremote = toml::find(dbmgr, "nngserver");
-            if (!Nremote.is_uninitialized())
+            if (!Nremote.is_empty())
             {
                 auto& reconf = _inst->_dbconf._nngServer;
                 reconf._ip = toml::find<string>(Nremote, "addr");
@@ -92,7 +92,7 @@ namespace SMCONF
         }
         {
             const auto& Nremote = toml::find(dbmgr, "tcpclient");
-            if (!Nremote.is_uninitialized())
+            if (!Nremote.is_empty())
             {
                 auto& reconf = _inst->_dbconf._tcpClient;
                 reconf._ip = toml::find<string>(Nremote, "addr");
@@ -102,7 +102,7 @@ namespace SMCONF
         }
         {
             const auto& Nremote = toml::find(dbmgr, "nngclient");
-            if (!Nremote.is_uninitialized())
+            if (!Nremote.is_empty())
             {
                 auto& reconf = _inst->_dbconf._nngClient;
                 reconf._ip = toml::find<string>(Nremote, "addr");
