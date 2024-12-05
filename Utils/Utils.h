@@ -258,7 +258,7 @@ namespace SMUtils
 		auto pairs = magic_enum::enum_entries<DBEnums>();
 		for(const auto& p: pairs)
 		{
-			bret = addOpDBValue2Name(magic_enum::enum_integer(std::get<0>(p)), std::get<1>(p));
+			//bret = addOpDBValue2Name(magic_enum::enum_integer(std::get<0>(p)), std::get<1>(p));
 			if(!bret)
 			{
 				break;
@@ -275,7 +275,7 @@ namespace SMUtils
 		auto pairs = magic_enum::enum_entries<MainEnums>();
 		for (const auto& p : pairs)
 		{
-			bret = addMainValue2Name(magic_enum::enum_integer(std::get<0>(p)), std::get<1>(p));
+			//bret = addMainValue2Name(magic_enum::enum_integer(std::get<0>(p)), std::get<1>(p));
 			if (!bret)
 			{
 				break;
