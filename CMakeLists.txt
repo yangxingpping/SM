@@ -6,12 +6,14 @@ set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
 
 project(libs)
 
+set(CMAKE_DEBUG_POSTFIX d)
+
 #set(CMAKE_CXX_COMPILER /Users/alqazy/Downloads/clang+llvm-13.0.1-x86_64-apple-darwin/bin/clang)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_C_STANDARD 11)
 
-
+option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 
 find_package(nng REQUIRED)
 find_package(nanomsg REQUIRED)
@@ -37,7 +39,7 @@ find_package(function2 CONFIG REQUIRED)
 
 add_definitions(-DUSE_SQLITE -DONESHOT_ASIO_STANDALONE -DASIO_HAS_FILE -DNOMINMAX -DSPDLOG_COMPILED_LIB)
 
-include_directories(inc database configs hashlibrary whereami/src endian/src hotupdate inc/os/${CMAKE_SYSTEM_NAME}/export_flags)
+include_directories(inc database Utils configs hashlibrary whereami/src endian/src hotupdate inc/os/${CMAKE_SYSTEM_NAME}/export_flags)
 
 IF(CMAKE_SYSTEM_NAME MATCHES "Windows")
   if(PROJECT_IS_TOP_LEVEL)

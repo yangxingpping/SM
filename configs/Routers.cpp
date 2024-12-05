@@ -139,7 +139,7 @@ namespace SMCONF
 		return ret;
 	}
 
-	CONFIGS_EXPORT PtTransRouterElement getRouterTransByMainC(int mainc)
+	PtTransRouterElement getRouterTransByMainC(int mainc)
 	{
 		PtTransRouterElement ret = nullptr;
 		if (_routersTrans == nullptr)

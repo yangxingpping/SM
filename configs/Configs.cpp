@@ -310,7 +310,7 @@ namespace SMCONF
         return bret;
     }
 
-	CONFIGS_EXPORT bool SInitLog(string logfile, string loggername)
+	bool SInitLog(string logfile, string loggername)
 	{
 		SMCONF::Configs::getInst2().getLogConfig()._context._file = logfile;
 		SMCONF::Configs::getInst2().getLogConfig()._context._logger = loggername;

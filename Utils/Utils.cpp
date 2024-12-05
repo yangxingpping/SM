@@ -339,7 +339,7 @@ namespace SMUtils
 		return ret;
 	}
 
-	UTILS_EXPORT bool addOpDBValue2Name(int v, string_view name)
+	bool addOpDBValue2Name(int v, string_view name)
 	{
 		if(_dbValue2Name.contains(v))
 		{
