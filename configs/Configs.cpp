@@ -190,13 +190,13 @@ namespace SMCONF
         return bret;
 	}
 
-	Configs& Configs::getInst2()
+	Configs* Configs::getInst2()
     {
         if (_inst == nullptr)
         {
             _inst = make_unique<Configs>();
         }
-        return *_inst;
+        return _inst.get();
     }
 
     Configs::Configs()
@@ -290,7 +290,7 @@ namespace SMCONF
     bool SInitLog()
     {
         bool bret = true;
-        auto conf = SMCONF::Configs::getInst2().getLogConfig();
+        auto conf = SMCONF::Configs::getInst2()->getLogConfig();
         _remote = conf._remote;
         _context = conf._context;
 
@@ -312,8 +312,8 @@ namespace SMCONF
 
 	bool SInitLog(string logfile, string loggername)
 	{
-		SMCONF::Configs::getInst2().getLogConfig()._context._file = logfile;
-		SMCONF::Configs::getInst2().getLogConfig()._context._logger = loggername;
+		SMCONF::Configs::getInst2()->getLogConfig()._context._file = logfile;
+		SMCONF::Configs::getInst2()->getLogConfig()._context._logger = loggername;
         return SInitLog();
 	}
 

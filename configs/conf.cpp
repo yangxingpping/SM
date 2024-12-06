@@ -23,54 +23,54 @@ namespace SMCONF
 			return bret;
 		}
 		string strpath = path;
-		bret = SMCONF::Configs::getInst2().Parse(strpath);
+		bret = SMCONF::Configs::getInst2()->Parse(strpath);
 		return bret;
 	}
 
 	DatabaseConfig* getDBConfig()
 	{
-		return &SMCONF::Configs::getInst2().getDBConfig();
+		return &SMCONF::Configs::getInst2()->getDBConfig();
 	}
 
 	void setDBConfig(const DatabaseConfig* conf)
 	{
 		assert(conf != nullptr);
-		SMCONF::Configs::getInst2().setDBConfig(*conf);
+		SMCONF::Configs::getInst2()->setDBConfig(*conf);
 	}
 
 	HttpConfig* getHttpConfig()
 	{
-		return &SMCONF::Configs::getInst2().getHttpConfig();
+		return &SMCONF::Configs::getInst2()->getHttpConfig();
 	}
 
 	LogConfig* getLogConfig()
 	{
-		return &SMCONF::Configs::getInst2().getLogConfig();
+		return &SMCONF::Configs::getInst2()->getLogConfig();
 	}
 
 	TransportConfig* getTransportConfig()
 	{
-		return &SMCONF::Configs::getInst2().getTransportConfig();
+		return &SMCONF::Configs::getInst2()->getTransportConfig();
 	}
 
 	NanoRepConf* getNngRepConfig()
 	{
-		return &SMCONF::Configs::getInst2().getNngRepConfig();
+		return &SMCONF::Configs::getInst2()->getNngRepConfig();
 	}
 
 	JWTConf* getJWTConf()
 	{
-		return &SMCONF::Configs::getInst2().getJWTConf();
+		return &SMCONF::Configs::getInst2()->getJWTConf();
 	}
 
 	TimeZoneConfig* getTimeZoneConfig()
 	{
-		return &SMCONF::Configs::getInst2().getTimeZoneConfig();
+		return &SMCONF::Configs::getInst2()->getTimeZoneConfig();
 	}
 
 	bool isRouterNeedJwt(string_view url)
 	{
-		return SMCONF::Configs::getInst2().isRouterNeedJwt(url);
+		return SMCONF::Configs::getInst2()->isRouterNeedJwt(url);
 	}
 
 }

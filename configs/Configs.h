@@ -15,7 +15,7 @@ namespace SMCONF
 	{
 	public:
 		static bool sInit();
-		static Configs& getInst2();
+		static Configs* getInst2();
 		Configs();
 		~Configs();
 		bool Parse(string path);

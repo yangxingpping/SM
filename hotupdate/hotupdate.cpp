@@ -31,7 +31,7 @@ namespace SMHotupdate
 		return bret;
 	}
 
-	HOTUPDATE_EXPORT void sUninit()
+	void sUninit()
 	{
 
 	}

@@ -18,7 +18,7 @@ using std::shared_ptr;
 using std::mutex;
 using std::lock_guard;
 
-#define RESLOAD (SMHotupdate::FilePathMonitor::getInst())
+
 namespace SMHotupdate
 {
 class HOTUPDATE_EXPORT FilePathMonitor
@@ -55,3 +55,4 @@ private:
 	bool _isReady = false;
 };
 }
+#define RESLOAD (SMHotupdate::FilePathMonitor::getInst())

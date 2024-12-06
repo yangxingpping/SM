@@ -45,7 +45,7 @@ ENDIF(CMAKE_SYSTEM_NAME MATCHES "Windows")
 aux_source_directory(./ A)
 add_library(Configs ${A})
 
-target_link_libraries(Configs PRIVATE spdlog::spdlog PRIVATE whereami)
+target_link_libraries(Configs PRIVATE spdlog::spdlog PRIVATE whereami PRIVATE Utils)
 
 ####
 # Properties of targets
