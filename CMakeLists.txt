@@ -39,7 +39,7 @@ find_package(function2 CONFIG REQUIRED)
 
 add_definitions(-DUSE_SQLITE -DONESHOT_ASIO_STANDALONE -DASIO_HAS_FILE -DNOMINMAX -DSPDLOG_COMPILED_LIB)
 
-include_directories(inc database Utils configs hashlibrary whereami/src endian/src hotupdate inc/os/${CMAKE_SYSTEM_NAME}/export_flags)
+include_directories( "C:\\Program Files (x86)\\endian\\include" inc database Utils configs hashlibrary whereami/src endian/src hotupdate inc/os/${CMAKE_SYSTEM_NAME}/export_flags)
 
 IF(CMAKE_SYSTEM_NAME MATCHES "Windows")
   if(PROJECT_IS_TOP_LEVEL)

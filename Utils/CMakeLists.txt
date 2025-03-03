@@ -57,11 +57,13 @@ target_link_libraries(Utils PRIVATE spdlog::spdlog)
 #   * other: -DFOO_Utils_DEBUG=0
 target_compile_definitions(Utils PUBLIC "Utils_DEBUG=$<CONFIG:Debug>")
 
-set(generated_headers "${CMAKE_CURRENT_BINARY_DIR}/generated_headers")
-set(Utils_export "${generated_headers}/Utils_EXPORT.h")
+#set(generated_headers "${CMAKE_CURRENT_BINARY_DIR}/generated_headers")
+#set(Utils_export "${generated_headers}/Utils_EXPORT.h")
 
 include(GenerateExportHeader)
-generate_export_header(Utils EXPORT_FILE_NAME ${Utils_export})
+generate_export_header(Utils EXPORT_FILE_NAME ${CMAKE_CURRENT_SOURCE_DIR}/../inc/os/${CMAKE_SYSTEM_NAME}/export_flags/${PROJECT_NAME}Export.h)
+
+#generate_export_header(Utils EXPORT_FILE_NAME ${Utils_export})
 
 target_include_directories(
     Utils PUBLIC
@@ -122,10 +124,10 @@ install(
 
 # Export headers:
 #   * ${CMAKE_CURRENT_BINARY_DIR}/.../Utils_EXPORT.h -> <prefix>/include/Utils_EXPORT.h
-install(
-    FILES "${Utils_export}"
-    DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
-)
+#install(
+ #   FILES "${Utils_export}"
+  #  DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
+#)
 
 # Config
 #   * <prefix>/lib/cmake/Foo/FooConfig.cmake
