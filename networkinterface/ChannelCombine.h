@@ -10,7 +10,7 @@
 #include "asio/experimental/concurrent_channel.hpp"
 #include "taskflow/taskflow.hpp"
 #include "spdlog/fmt/bin_to_hex.h"
-#include "magic_enum.hpp"
+#include "magic_enum/magic_enum.hpp"
 #include "enums.h"
 #include "Routers.h"
 #include "spdlog/spdlog.h"
@@ -18,7 +18,7 @@
 #include "myconcept.h"
 #include "ChannelManager.h"
 #include "myconcept.h"
-#include "magic_enum.hpp"
+#include "magic_enum/magic_enum.hpp"
 #include <memory>
 #include <set>
 #include <vector>

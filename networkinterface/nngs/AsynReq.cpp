@@ -2,9 +2,9 @@
 #include "AsynReq.h"
 
 #include "nng/protocol/reqrep0/req.h"
-#include "magic_enum.hpp"
+#include "magic_enum/magic_enum.hpp"
 #include "spdlog/spdlog.h"
-#include "magic_enum.hpp"
+#include "magic_enum/magic_enum.hpp"
 #include "hotupdate.h"
 
 namespace SMNetwork

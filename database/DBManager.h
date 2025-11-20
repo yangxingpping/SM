@@ -13,7 +13,7 @@
 #include "databaseExport.h"
 #include "Configs.h"
 
-#include "concurrentqueue/concurrentqueue.h"
+#include "concurrentqueue/moodycamel/concurrentqueue.h"
 #ifdef USE_SQLITE
 #include "sqlpp11/sqlite3/connection.h"
 #else

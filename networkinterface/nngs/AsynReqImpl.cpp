@@ -1,6 +1,6 @@
 #include "AsynReqImpl.h"
 #include "hotupdate.h"
-#include "magic_enum.hpp"
+#include "magic_enum/magic_enum.hpp"
 #include "asio/co_spawn.hpp"
 #include "asio/detached.hpp"
 #include "spdlog/spdlog.h"

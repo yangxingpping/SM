@@ -5,7 +5,7 @@
 #include "NNGCommBase.h"
 #include "AsynBase.h"
 
-#include "concurrentqueue/concurrentqueue.h"
+#include "concurrentqueue/moodycamel/concurrentqueue.h"
 
 #include <vector>
 using std::vector;

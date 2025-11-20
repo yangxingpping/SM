@@ -21,7 +21,7 @@
 #include "FullDuplexChannel.h"
 #include "nngs/AsynRep.h"
 #include "reqreps.h"
-#include "magic_enum.hpp"
+#include "magic_enum/magic_enum.hpp"
 #include "dealers/MainAssPlatPack.h"
 #include "LocalNetManager.h"
 #include "ChannelCombine.h"

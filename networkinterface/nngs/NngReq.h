@@ -4,7 +4,7 @@
 #include "ChannelCombine.h"
 #include "ReqImpl.h"
 
-#include "concurrentqueue/concurrentqueue.h"
+#include "concurrentqueue/moodycamel/concurrentqueue.h"
 
 #include <string>
 #include <memory>

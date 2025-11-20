@@ -93,7 +93,7 @@ namespace SMNetwork {
 		{
 			return bret;
 		}
-		initjwtconfig(SMCONF::Configs::getInst2().getJWTConf());
+		//initjwtconfig(SMCONF::Configs::getInst2().getJWTConf());
 		Https::sInit();
 		MessageRouter::sInit();
 		assert(LocalNetManager::sInit());

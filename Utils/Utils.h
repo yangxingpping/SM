@@ -1,7 +1,7 @@
 #pragma once
 #include "UtilsExport.h"
 #include "enums.h"
-#include "magic_enum.hpp"
+#include "magic_enum/magic_enum.hpp"
 #include "Structs.h"
 
 #include <string_view>

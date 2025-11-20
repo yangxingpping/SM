@@ -11,7 +11,7 @@
 
 #pragma once
 #include "templatefuncs.h"
-#include "magic_enum.hpp"
+#include "magic_enum/magic_enum.hpp"
 #include "database.h"
 #include "MainCmdTag.h"
 #include "reqreps.h"

@@ -1,7 +1,7 @@
 #pragma once
 #include "networkinterfaceExport.h"
 #include "asio/awaitable.hpp"
-#include "magic_enum.hpp"
+#include "magic_enum/magic_enum.hpp"
 #include "myconcept.h"
 #include "hotupdate.h"
 #include "ChannelCombine.h"
