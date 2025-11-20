@@ -8,7 +8,7 @@
 #include "asio/io_context.hpp"
 #include "asio/ip/tcp.hpp"
 #include "taskflow/taskflow.hpp"
-#include "magic_enum.hpp"
+#include "magic_enum/magic_enum.hpp"
 #include "enums.h"
 #include "PackDealerBase.h"
 #include "spdlog/spdlog.h"

@@ -1,6 +1,6 @@
 #pragma once
 #include "networkinterfaceExport.h"
-#include "magic_enum.hpp"
+#include "magic_enum/magic_enum.hpp"
 #include "templatefuncs.h"
 #include "asio/awaitable.hpp"
 #include "fmt/format.h"

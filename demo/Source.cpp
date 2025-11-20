@@ -8,7 +8,7 @@
 #include <iostream>
 #include <thread>
 #include <chrono>
-#include "magic_enum.hpp"
+#include "magic_enum/magic_enum.hpp"
 #include "DBManager.h"
 #include "socket/TcpClient.h"
 #include "socket/TcpServer.h"

@@ -14,10 +14,10 @@
 #include "DBConnectTCP.h"
 #include "networkinterface.h"
 #include "PlatformPackInterface.h"
-#include "concurrentqueue/concurrentqueue.h"
+#include "concurrentqueue/moodycamel/concurrentqueue.h"
 #include "spdlog/spdlog.h"
 #include "iguana/json.hpp"
-#include "magic_enum.hpp"
+#include "magic_enum/magic_enum.hpp"
 #include <string>
 #include <memory>
 #include <span>

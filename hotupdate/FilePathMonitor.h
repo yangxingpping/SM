@@ -1,6 +1,6 @@
 #pragma once
 #include "hotupdateExport.h"
-#include "concurrentqueue/concurrentqueue.h"
+#include "concurrentqueue/moodycamel/concurrentqueue.h"
 #include "PathMonitorImpl.h"
 #include "FileOp.h"
 #include "tsl/htrie_map.h"

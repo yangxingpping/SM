@@ -1,7 +1,7 @@
 
 #pragma once
 
-#include "magic_enum.hpp"
+#include "magic_enum/magic_enum.hpp"
 #include "MainCmdTag.h"
 #include "hotupdate.h"
 #include "enums.h"

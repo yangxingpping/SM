@@ -1,5 +1,5 @@
 #pragma once
-#include "concurrentqueue/concurrentqueue.h"
+#include "concurrentqueue/moodycamel/concurrentqueue.h"
 #include "hotupdate.h"
 #include "TcpChannel.h"
 #include "MessageSplitFuncs.h"

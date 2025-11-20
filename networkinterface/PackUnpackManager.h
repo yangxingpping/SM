@@ -2,7 +2,7 @@
 #include "networkinterfaceExport.h"
 #include "myconcept.h"
 #include "PlatformPackInterface.h"
-#include "magic_enum.hpp"
+#include "magic_enum/magic_enum.hpp"
 #include "spdlog/spdlog.h"
 
 #include <span>

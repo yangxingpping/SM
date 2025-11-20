@@ -3,7 +3,7 @@
 //#include "TcpChannel.h"
 #include "hotupdate.h"
 
-#include "concurrentqueue/concurrentqueue.h"
+#include "concurrentqueue/moodycamel/concurrentqueue.h"
 
 #include "PackDealerBase.h"
 

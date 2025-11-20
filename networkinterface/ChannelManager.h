@@ -3,8 +3,8 @@
 #include <memory>
 #include "myconcept.h"
 #include "enums.h"
-#include "magic_enum.hpp"
-#include "concurrentqueue/concurrentqueue.h"
+#include "magic_enum/magic_enum.hpp"
+#include "concurrentqueue/moodycamel/concurrentqueue.h"
 #include "spdlog/spdlog.h"
 #include <map>
 #include <any>
