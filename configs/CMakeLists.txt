@@ -1,7 +1,7 @@
 
 cmake_minimum_required(VERSION 3.25) # GENERATOR_IS_MULTI_CONFIG
 
-project(Configs VERSION 1.2.3)
+project(configs VERSION 1.2.3)
 
 
 if(MSVC)
@@ -43,9 +43,9 @@ ENDIF(CMAKE_SYSTEM_NAME MATCHES "Windows")
 ####
 # Create targets
 aux_source_directory(./ A)
-add_library(Configs ${A})
+add_library(configs ${A})
 
-target_link_libraries(Configs PRIVATE spdlog::spdlog PRIVATE whereami PRIVATE Utils)
+target_link_libraries(configs PRIVATE spdlog::spdlog PRIVATE whereami PRIVATE Utils)
 
 ####
 # Properties of targets
@@ -55,16 +55,16 @@ target_link_libraries(Configs PRIVATE spdlog::spdlog PRIVATE whereami PRIVATE Ut
 #   * Debug: -DFOO_Configs_DEBUG=1
 #   * Release: -DFOO_Configs_DEBUG=0
 #   * other: -DFOO_Configs_DEBUG=0
-target_compile_definitions(Configs PUBLIC "Configs_DEBUG=$<CONFIG:Debug>")
+target_compile_definitions(configs PUBLIC "Configs_DEBUG=$<CONFIG:Debug>")
 
 set(generated_headers "${CMAKE_CURRENT_BINARY_DIR}/generated_headers")
 set(Configs_export "${generated_headers}/Configs_EXPORT.h")
 
 include(GenerateExportHeader)
-generate_export_header(Configs EXPORT_FILE_NAME ${Configs_export})
+generate_export_header(configs EXPORT_FILE_NAME ${Configs_export})
 
 target_include_directories(
-    Configs PUBLIC
+    configs PUBLIC
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}>"
     "$<BUILD_INTERFACE:${generated_headers}>"
 )
@@ -103,7 +103,7 @@ configure_package_config_file(
 )
 
 install(
-    TARGETS Configs
+    TARGETS configs
     EXPORT "${TARGETS_EXPORT_NAME}"
     LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
     ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"

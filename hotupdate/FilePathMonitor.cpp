@@ -19,7 +19,8 @@ shared_ptr<FilePathMonitor> FilePathMonitor::getInst()
 {
     if (_inst == nullptr)
     {
-        auto resconf = SMCONF::Configs::getInst2().getHttpConfig();
+        assert(0);
+        /*auto resconf = SMCONF::Configs::getInst2().getHttpConfig();
         if (!std::filesystem::exists(std::filesystem::path(resconf._resRootPath)))
         {
             SPDLOG_ERROR("http resource root path {} not exist", resconf._resRootPath);
@@ -32,7 +33,7 @@ shared_ptr<FilePathMonitor> FilePathMonitor::getInst()
             _inst = nullptr;
         }
         _inst->setReady();
-        assert(bsucc);
+        assert(bsucc);*/
     }
     return _inst;
 }
@@ -82,8 +83,8 @@ void FilePathMonitor::notifyConfigModified(std::string path)
 asio::awaitable<string_view> FilePathMonitor::asyncGetResource(std::string path)
 {
     string_view rep;
-    auto resconf = SMCONF::Configs::getInst2().getHttpConfig();
-    std::filesystem::path p = resconf._resRootPath;
+    //auto resconf = SMCONF::Configs::getInst2().getHttpConfig();
+    /*std::filesystem::path p = resconf._resRootPath;
     assert(!path.empty());
     if (path.empty() || path[0] != _shttp_url_sep)
     {
@@ -111,7 +112,7 @@ asio::awaitable<string_view> FilePathMonitor::asyncGetResource(std::string path)
     {
         SPDLOG_WARN("get url {} response empty", path);
     }
-    SPDLOG_INFO("resoource {} return data length {}", path, rep.length());
+    SPDLOG_INFO("resoource {} return data length {}", path, rep.length());*/
     co_return rep;
 }
 

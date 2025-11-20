@@ -1,7 +1,7 @@
 
 cmake_minimum_required(VERSION 3.25) # GENERATOR_IS_MULTI_CONFIG
 
-project(Hotupdate VERSION 1.2.3)
+project(hotupdate VERSION 1.2.3)
 
 
 if(MSVC)
@@ -43,9 +43,9 @@ ENDIF(CMAKE_SYSTEM_NAME MATCHES "Windows")
 ####
 # Create targets
 aux_source_directory(./ A)
-add_library(Hotupdate ${A})
+add_library(hotupdate ${A})
 
-target_link_libraries(Hotupdate PRIVATE spdlog::spdlog PRIVATE whereami PRIVATE efsw::efsw)
+target_link_libraries(hotupdate PRIVATE spdlog::spdlog PRIVATE whereami PRIVATE efsw::efsw)
 
 ####
 # Properties of targets
@@ -55,16 +55,16 @@ target_link_libraries(Hotupdate PRIVATE spdlog::spdlog PRIVATE whereami PRIVATE 
 #   * Debug: -DFOO_Hotupdate_DEBUG=1
 #   * Release: -DFOO_Hotupdate_DEBUG=0
 #   * other: -DFOO_Hotupdate_DEBUG=0
-target_compile_definitions(Hotupdate PUBLIC "Hotupdate_DEBUG=$<CONFIG:Debug>")
+target_compile_definitions(hotupdate PUBLIC "Hotupdate_DEBUG=$<CONFIG:Debug>")
 
 set(generated_headers "${CMAKE_CURRENT_BINARY_DIR}/generated_headers")
 set(Hotupdate_export "${generated_headers}/Hotupdate_EXPORT.h")
 
 include(GenerateExportHeader)
-generate_export_header(Hotupdate EXPORT_FILE_NAME ${Hotupdate_export})
+generate_export_header(hotupdate EXPORT_FILE_NAME ${Hotupdate_export})
 
 target_include_directories(
-    Hotupdate PUBLIC
+    hotupdate PUBLIC
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}>"
     "$<BUILD_INTERFACE:${generated_headers}>"
 )
@@ -103,7 +103,7 @@ configure_package_config_file(
 )
 
 install(
-    TARGETS Hotupdate
+    TARGETS hotupdate
     EXPORT "${TARGETS_EXPORT_NAME}"
     LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
     ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
